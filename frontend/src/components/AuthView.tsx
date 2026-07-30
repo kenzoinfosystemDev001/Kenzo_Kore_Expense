@@ -7,8 +7,8 @@ export const AuthView: React.FC = () => {
   const { login } = useApp();
   
   // Login Form States
-  const [email, setEmail] = useState('sujal.kumar@kenzo.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +28,7 @@ export const AuthView: React.FC = () => {
           origin: { y: 0.6 }
         });
       } else {
-        setError('Invalid email or password. Try: sujal.kumar@kenzo.com / password123');
+        setError('Invalid email or password.');
       }
     } catch (err) {
       setLoading(false);
@@ -70,7 +70,7 @@ export const AuthView: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="Enter mail"
+                placeholder="Enter Email"
                 className="bg-transparent border-none text-xs w-full text-white placeholder-gray-500 font-sans focus:ring-0"
                 required
               />
@@ -88,7 +88,7 @@ export const AuthView: React.FC = () => {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder="Enter Password"
                 className="bg-transparent border-none text-xs w-full text-white placeholder-gray-500 font-sans focus:ring-0"
                 required
               />
