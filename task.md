@@ -1,0 +1,40 @@
+# Task List: Kenzo_Kore_Expense Implementation
+
+- [x] Setup Next.js 15 Web Application
+    - [x] Initialize project with React 19, TypeScript, TailwindCSS (Vite SPA template)
+    - [x] Install required UI packages (lucide-react, recharts, framer-motion, canvas-confetti, etc.)
+    - [x] Create layout architecture (Theme provider, Sidebar, Header, User context)
+- [x] Authentication & User Role Switcher
+    - [x] Setup mock authentication page (Login/Register views with validation)
+    - [x] Establish role-based routing and permissions state (JWT signing + Bcrypt audit traces)
+- [x] Employee Dashboard & Views
+    - [x] Employee dashboard: metrics cards (Pending, Approved, Reimbursed, Spend widgets)
+    - [x] Category distribution pie charts and spend line charts
+    - [x] Recent transactions table with filter/sorting
+- [x] Expense Creation & Receipt Upload
+    - [x] Create Expense Form: full fields (Category, Subcategory, Project, Client, Location, Tax, Billable, etc.)
+    - [x] Receipt Upload & Drag-and-drop zone with HEIC/PNG/JPEG support
+    - [x] Simulated OCR Processor (reads vendor, date, amount, taxes, autofills form)
+    - [x] Duplicate check notification and policy violation alert system
+- [x] Admin & Manager Review Flow
+    - [x] Admin / Manager Dashboard: global metrics (total employees, spend, pending approval, budget usage)
+    - [x] Approval Queue: lists submitted expenses with detailed modal (receipt preview, line items, status logs)
+    - [x] Action controls: Approve, Reject, Return to draft (with comment panel)
+- [x] Analytics & Reporting Module
+    - [x] Interactive charting system (Department-wise, Employee-wise, Expense Trend, Top Vendors)
+    - [x] Report generator interface: export to PDF / CSV / Excel (simulated preview and download)
+- [x] Admin Settings Panel
+    - [x] Configure policies, workflows, budgets, categories, and departments
+    - [x] Audit logs and system settings viewer
+- [x] AI Insights & Natural Language Search
+    - [x] Chat assistant interface: "Show my food expenses", "Who went over budget?", etc.
+    - [x] Smart suggestions list and monthly AI forecast panel
+- [x] Polish & Mobile Responsive Design
+    - [x] Soft glassmorphism styling, hover micro-animations
+    - [x] Dark/Light mode theme system
+    - [x] Mobile responsive responsive menus and PWA/offline layout demo
+- [x] Backend Structure Scaffolding
+    - [x] Complete database Prisma schema modeling 23 entities
+    - [x] NestJS Auth controller endpoints (login, refresh, password reset)
+    - [x] NestJS Expense controller endpoints (CRUD, submit, delete)
+    - [x] NestJS Approval controller endpoints (approve, return, reject)

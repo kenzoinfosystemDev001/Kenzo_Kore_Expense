@@ -1,0 +1,234 @@
+// Prisma schema file for Kenzo Kore Expense
+// Database: PostgreSQL
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EMPLOYEE
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_MANAGER
+  PENDING_FINANCE
+  APPROVED
+  REJECTED
+  REIMBURSED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  UPI
+  CASH
+  CHEQUE
+  CORPORATE_CARD
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  name           String
+  avatar         String?
+  role           Role            @default(EMPLOYEE)
+  designation    String
+  departmentId   String
+  department     Department      @relation(fields: [departmentId], references: [id])
+  managerId      String?
+  manager        User?           @relation("ManagerEmployees", fields: [managerId], references: [id])
+  employees      User[]          @relation("ManagerEmployees")
+  costCenterId   String
+  costCenter     CostCenter      @relation(fields: [costCenterId], references: [id])
+  joiningDate    DateTime        @default(now())
+  gstNumber      String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  expenses       Expense[]
+  auditLogs      AuditLog[]
+  approvals      ExpenseApproval[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model Department {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  code         String    @unique
+  budgetLimit  Float
+  spentAmount  Float     @default(0.0)
+  users        User[]
+  expenses     Expense[]
+
+  @@map("departments")
+}
+
+model CostCenter {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  users     User[]
+  expenses  Expense[]
+
+  @@map("cost_centers")
+}
+
+model Project {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  code      String    @unique
+  budget    Float
+  spent     Float     @default(0.0)
+  expenses  Expense[]
+
+  @@map("projects")
+}
+
+model Expense {
+  id               String            @id @default(uuid())
+  title            String
+  employeeId       String
+  employee         User              @relation(fields: [employeeId], references: [id])
+  departmentId     String
+  department       Department        @relation(fields: [departmentId], references: [id])
+  costCenterId     String
+  costCenter       CostCenter        @relation(fields: [costCenterId], references: [id])
+  projectId        String?
+  project          Project?          @relation(fields: [projectId], references: [id])
+  category         String
+  amount           Float
+  currency         String            @default("USD")
+  date             DateTime
+  paymentMethod    PaymentMethod     @default(UPI)
+  status           ExpenseStatus     @default(DRAFT)
+  merchant         String
+  businessPurpose  String
+  billable         Boolean           @default(false)
+  location         String
+  description      String?
+  receiptUrl       String?
+  invoiceUrl       String?
+  gstNumber        String?
+  taxAmount        Float             @default(0.0)
+  referenceNumber  String?           @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  items            ExpenseItem[]
+  approvals        ExpenseApproval[]
+  reimbursements   Reimbursement[]
+  tags             ExpenseTag[]
+
+  @@map("expenses")
+}
+
+model ExpenseItem {
+  id          String   @id @default(uuid())
+  expenseId   String
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  description String
+  amount      Float
+  taxAmount   Float    @default(0.0)
+  category    String
+
+  @@map("expense_items")
+}
+
+model ExpenseApproval {
+  id         String        @id @default(uuid())
+  expenseId  String
+  expense    Expense       @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  approverId String
+  approver   User          @relation(fields: [approverId], references: [id])
+  status     ExpenseStatus
+  comment    String?
+  createdAt  DateTime      @default(now())
+
+  @@map("expense_approvals")
+}
+
+model Reimbursement {
+  id            String        @id @default(uuid())
+  expenseId     String
+  expense       Expense       @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  status        String        // PENDING, PROCESSING, PAID
+  paymentMethod PaymentMethod
+  transactionId String?
+  clearedAt     DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@map("reimbursements")
+}
+
+model Policy {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  category    String   @unique
+  limitAmount Float
+  description String
+  isEnabled   Boolean  @default(true)
+
+  @@map("policies")
+}
+
+model Budget {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  allocated Float
+  spent     Float    @default(0.0)
+  period    String   // MONTHLY, QUARTERLY, YEARLY
+
+  @@map("budgets")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String
+  ipAddress String
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Tag {
+  id        String       @id @default(uuid())
+  name      String       @unique
+  expenses  ExpenseTag[]
+
+  @@map("tags")
+}
+
+model ExpenseTag {
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([expenseId, tagId])
+  @@map("expense_tags")
+}

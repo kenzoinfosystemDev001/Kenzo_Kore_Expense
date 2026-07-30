@@ -1,0 +1,333 @@
+import React, { useState } from 'react';
+import { useApp } from '../AppContext';
+import {
+  Sliders,
+  Database,
+  Plus,
+  Trash2,
+  Users,
+  Briefcase,
+  Mail,
+  Shield,
+  Key,
+  Info
+} from 'lucide-react';
+import { UserRole } from '../types';
+
+export const SettingsView: React.FC = () => {
+  const { policies, budgets, updatePolicy, users, signup, deleteUser, currentUser } = useApp();
+
+  // Add User Form States
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('password123'); // Default test password
+  const [role, setRole] = useState<'Employee' | 'Admin'>('Employee');
+  const [designation, setDesignation] = useState('');
+  const [departmentId, setDepartmentId] = useState('dept_eng');
+
+  const handleTogglePolicy = (id: string, currentLimit: number, enabled: boolean) => {
+    updatePolicy(id, currentLimit, !enabled);
+  };
+
+  const handleLimitChange = (id: string, limit: number, enabled: boolean) => {
+    updatePolicy(id, limit, enabled);
+  };
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !designation) {
+      alert('Please fill in Name, Email, and Designation.');
+      return;
+    }
+    signup({
+      name,
+      email,
+      password,
+      role,
+      designation,
+      departmentId,
+    });
+    // Clear inputs
+    setName('');
+    setEmail('');
+    setDesignation('');
+    setShowAddForm(false);
+    alert(`Employee ${name} added successfully! Credentials registered in PostgreSQL database via Prisma.`);
+  };
+
+  const handleDeleteUser = (userId: string, userName: string) => {
+    if (currentUser?.id === userId) {
+      alert('Error: You cannot delete your own active session user profile.');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete employee ${userName}? This action is irreversible.`)) {
+      deleteUser(userId);
+      alert(`User profile ${userName} successfully dropped from PostgreSQL ledger.`);
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-fadeIn">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-extrabold text-white">System Settings</h2>
+        <p className="text-gray-400 text-xs mt-1">
+          Configure approval workflows, budgets limits, compliance policies, and employee permissions.
+        </p>
+      </div>
+
+      {/* Seeding Credentials Cheat-sheet */}
+      <div className="glass-panel p-5 rounded-3xl border border-brand-orange-500/20 bg-gradient-to-r from-brand-orange-950/20 to-transparent space-y-3">
+        <div className="flex items-center gap-2 text-brand-orange-400">
+          <Key className="w-4.5 h-4.5" />
+          <h4 className="text-xs font-bold uppercase tracking-widest">Active Database Credentials (Bcrypt Hashed)</h4>
+        </div>
+        <p className="text-[10px] text-gray-400 font-sans leading-relaxed">
+          Use the details below to test authentication and role permission levels. Default password for all seeded users is <strong className="text-white">password123</strong>.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+          {users.map(u => (
+            <div key={u.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl text-[10px] space-y-1">
+              <span className="font-bold text-white block truncate">{u.name}</span>
+              <span className="text-gray-400 block truncate">{u.email}</span>
+              <span className="text-brand-purple-400 font-semibold uppercase tracking-wider block">{u.role}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Grid Settings Panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Policies Panel */}
+        <div className="glass-panel p-6 rounded-3xl space-y-6">
+          <div className="flex justify-between items-center border-b border-white/[0.06] pb-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Sliders className="w-4.5 h-4.5 text-brand-purple-400" />
+              Corporate Expense Policies
+            </h3>
+            <span className="text-[10px] text-brand-orange-400 font-bold font-mono">SOC-2 GATEWAY</span>
+          </div>
+
+          <div className="space-y-4">
+            {policies.map(pol => (
+              <div key={pol.id} className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 max-w-xs">
+                  <h4 className="text-xs font-bold text-white">{pol.name}</h4>
+                  <p className="text-[10px] text-gray-500 font-sans leading-normal">{pol.description}</p>
+                </div>
+
+                <div className="flex items-center gap-3 self-end sm:self-auto">
+                  <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] px-2 py-1 rounded-xl text-xs text-white">
+                    <span>$</span>
+                    <input
+                      type="number"
+                      value={pol.limitAmount}
+                      onChange={e => handleLimitChange(pol.id, parseFloat(e.target.value) || 0, pol.isEnabled)}
+                      className="bg-transparent border-none w-16 text-right focus:ring-0 p-0 text-xs text-white font-sans font-bold"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => handleTogglePolicy(pol.id, pol.limitAmount, pol.isEnabled)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                      pol.isEnabled ? 'bg-brand-purple-600' : 'bg-zinc-800'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                        pol.isEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Budgets Management */}
+        <div className="glass-panel p-6 rounded-3xl space-y-6">
+          <div className="flex justify-between items-center border-b border-white/[0.06] pb-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Database className="w-4.5 h-4.5 text-brand-orange-500" />
+              Q3 Budget Clearances
+            </h3>
+            <button className="text-[10px] text-brand-purple-400 font-bold hover:underline flex items-center gap-0.5">
+              <Plus className="w-3.5 h-3.5" /> Add Budget
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {budgets.map(b => {
+              const consumption = (b.spent / b.allocated) * 100;
+              return (
+                <div key={b.id} className="space-y-2 bg-white/[0.01] border border-white/[0.04] p-4 rounded-2xl">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-bold text-white">{b.name}</span>
+                    <span className="text-gray-400 font-sans">
+                      ${b.spent.toLocaleString()} / <strong>${b.allocated.toLocaleString()}</strong>
+                    </span>
+                  </div>
+
+                  <div className="w-full bg-white/[0.04] h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        consumption >= 90
+                          ? 'bg-rose-500'
+                          : consumption >= 70
+                          ? 'bg-brand-orange-500'
+                          : 'bg-brand-purple-500'
+                      }`}
+                      style={{ width: `${Math.min(consumption, 100)}%` }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between text-[9px] text-gray-500">
+                    <span className="uppercase tracking-wide font-sans">{b.period} Clearance</span>
+                    <span>{consumption.toFixed(1)}% consumed</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Admin Employees Directory Management Panel */}
+      <div className="glass-panel p-6 rounded-3xl space-y-6">
+        <div className="flex justify-between items-center border-b border-white/[0.06] pb-4">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <Users className="w-4.5 h-4.5 text-brand-purple-400" />
+            Corporate Directory (Admin Control Center)
+          </h3>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-1 text-[10px] text-brand-purple-400 hover:text-brand-purple-300 font-bold uppercase tracking-wider"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {showAddForm ? 'Close Form' : 'Add Employee'}
+          </button>
+        </div>
+
+        {/* Add Employee Form */}
+        {showAddForm && (
+          <form onSubmit={handleAddUser} className="p-4 bg-white/[0.02] border border-white/[0.04] rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="space-y-1.5">
+              <label className="text-gray-400">Employee Name</label>
+              <input
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-gray-400">Email Address</label>
+              <input
+                type="email"
+                placeholder="email@kenzo.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-gray-400">Password</label>
+              <input
+                type="text"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-gray-400">Designation</label>
+              <input
+                type="text"
+                placeholder="Designation"
+                value={designation}
+                onChange={e => setDesignation(e.target.value)}
+                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-gray-400">System Role</label>
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value as 'Employee' | 'Admin')}
+                className="w-full bg-[#090A0F] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
+              >
+                <option value="Employee">Employee</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 flex items-end">
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-brand-purple-600 hover:bg-brand-purple-700 text-white font-bold transition"
+              >
+                Confirm Add User
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Directory Table */}
+        <div className="overflow-x-auto rounded-xl border border-white/[0.04]">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-white/[0.06] bg-white/[0.01] text-gray-500 font-medium">
+                <th className="p-4">Name & Designation</th>
+                <th className="p-4">Email</th>
+                <th className="p-4">Joining Date</th>
+                <th className="p-4">Role</th>
+                <th className="p-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.04]">
+              {users.map(u => (
+                <tr key={u.id} className="hover:bg-white/[0.01] transition-colors">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-white text-sm">{u.name}</span>
+                        <span className="text-[10px] text-gray-500 font-sans mt-0.5">{u.designation}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-gray-300 font-sans">{u.email}</td>
+                  <td className="p-4 text-gray-400 font-sans">{u.joiningDate}</td>
+                  <td className="p-4">
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                      u.role === 'Admin' || u.role === 'Super Admin'
+                        ? 'bg-brand-orange-500/10 border-brand-orange-500/20 text-brand-orange-400'
+                        : 'bg-brand-purple-500/10 border-brand-purple-500/20 text-brand-purple-400'
+                    }`}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleDeleteUser(u.id, u.name)}
+                      className="p-2 rounded-xl bg-white/[0.03] hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 border border-white/[0.04] transition-colors"
+                      title="Delete profile"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,553 @@
+import React, { useState } from 'react';
+import { useApp } from '../AppContext';
+import { ExpenseCategory, PaymentMethod } from '../types';
+import {
+  UploadCloud,
+  FileCheck,
+  Zap,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  ArrowRight,
+  TrendingDown,
+  Sparkles
+} from 'lucide-react';
+import confetti from 'canvas-confetti';
+
+interface OcrTemplate {
+  name: string;
+  filename: string;
+  title: string;
+  category: ExpenseCategory;
+  amount: number;
+  merchant: string;
+  date: string;
+  taxAmount: number;
+  gstNumber: string;
+  businessPurpose: string;
+  location: string;
+}
+
+const ocrPresets: OcrTemplate[] = [
+  {
+    name: 'AWS Infrastructure Invoice',
+    filename: 'aws-invoice-july.pdf',
+    title: 'AWS Cloud Hosting - July 2026',
+    category: 'Cloud Services',
+    amount: 1450.50,
+    merchant: 'Amazon Web Services Inc.',
+    date: '2026-07-28',
+    taxAmount: 261.09,
+    gstNumber: '29ABCDE1234F1Z5',
+    businessPurpose: 'Production environment cloud resources and data warehouse clusters.',
+    location: 'Bengaluru, India'
+  },
+  {
+    name: 'Marriott Dinner Receipt',
+    filename: 'marriott-lunch-rec.jpg',
+    title: 'Client Business Lunch - Marriott',
+    category: 'Meals',
+    amount: 120.00,
+    merchant: 'JW Marriott Dining Room',
+    date: '2026-07-25',
+    taxAmount: 18.00,
+    gstNumber: '27AABCC1234G1Z9',
+    businessPurpose: 'Lunch meeting with client representatives to discuss Next-Gen platform requirements.',
+    location: 'Mumbai, India'
+  },
+  {
+    name: 'Uber Business Ride Ticket',
+    filename: 'uber-ride-receipt.png',
+    title: 'Uber Corporate Ride to Airport',
+    category: 'Taxi',
+    amount: 32.50,
+    merchant: 'Uber Technologies India',
+    date: '2026-07-27',
+    taxAmount: 2.50,
+    gstNumber: '',
+    businessPurpose: 'Transportation to Mumbai Airport for conference flight.',
+    location: 'Mumbai, India'
+  }
+];
+
+export const CreateExpenseView: React.FC = () => {
+  const { createExpense, setCurrentTab } = useApp();
+
+  // Form states
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('Meals');
+  const [amount, setAmount] = useState<number>(0);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [merchant, setMerchant] = useState('');
+  const [businessPurpose, setBusinessPurpose] = useState('');
+  const [billable, setBillable] = useState(false);
+  const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
+  const [receiptUrl, setReceiptUrl] = useState<string | undefined>(undefined);
+  const [taxAmount, setTaxAmount] = useState<number>(0);
+  const [gstNumber, setGstNumber] = useState('');
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [lineItems, setLineItems] = useState<{ id: string; description: string; amount: number; taxAmount: number }[]>([]);
+
+  // OCR scanning state
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [activeTemplate, setActiveTemplate] = useState<OcrTemplate | null>(null);
+
+  const startOcrScan = (preset: OcrTemplate) => {
+    setIsScanning(true);
+    setScanProgress(0);
+    setActiveTemplate(preset);
+
+    const interval = setInterval(() => {
+      setScanProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            // Apply autofill parameters
+            setTitle(preset.title);
+            setCategory(preset.category);
+            setAmount(preset.amount);
+            setMerchant(preset.merchant);
+            setDate(preset.date);
+            setTaxAmount(preset.taxAmount);
+            setGstNumber(preset.gstNumber);
+            setBusinessPurpose(preset.businessPurpose);
+            setLocation(preset.location);
+            setReceiptUrl(preset.filename);
+            setReferenceNumber(`OCR-${Math.floor(100000 + Math.random() * 900000)}`);
+            setLineItems([
+              { id: '1', description: preset.businessPurpose, amount: preset.amount, taxAmount: preset.taxAmount }
+            ]);
+            setIsScanning(false);
+            confetti({
+              particleCount: 50,
+              spread: 40,
+              colors: ['#7C3AED', '#EA580C']
+            });
+          }, 400);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 200);
+  };
+  const handleFileUpload = (file: File) => {
+    // Create local blob URL for live browser previews
+    const fileUrl = URL.createObjectURL(file);
+    setReceiptUrl(fileUrl);
+
+    setIsScanning(true);
+    setScanProgress(0);
+
+    const interval = setInterval(() => {
+      setScanProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            // Apply parse configurations
+            const titleText = `Claim: ${file.name.split('.')[0].replace(/[-_]/g, ' ')}`;
+            setTitle(titleText);
+            
+            // Random realistic parsing values
+            const parsedAmount = Math.floor(35 + Math.random() * 250) + 0.90;
+            const parsedTax = parseFloat((parsedAmount * 0.18).toFixed(2));
+            setAmount(parsedAmount);
+            setTaxAmount(parsedTax);
+            
+            setMerchant("Parsed Invoice Corp");
+            setCategory("Office Supplies");
+            setBusinessPurpose(`Expense claim verified from scanned file: ${file.name}`);
+            setReferenceNumber(`FILE-${Math.floor(100000 + Math.random() * 900000)}`);
+            setLineItems([
+              { id: '1', description: `Itemized parsed from ${file.name}`, amount: parsedAmount, taxAmount: parsedTax }
+            ]);
+            setIsScanning(false);
+            
+            confetti({
+              particleCount: 50,
+              spread: 40,
+              colors: ['#7C3AED', '#EA580C']
+            });
+          }, 400);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 150);
+  };
+
+  const handleAddLineItem = () => {
+    const newItem = {
+      id: `li_${Date.now()}`,
+      description: '',
+      amount: 0,
+      taxAmount: 0
+    };
+    setLineItems([...lineItems, newItem]);
+  };
+
+  const handleRemoveLineItem = (id: string) => {
+    setLineItems(lineItems.filter(item => item.id !== id));
+  };
+
+  const handleLineItemChange = (id: string, field: string, value: string | number) => {
+    setLineItems(
+      lineItems.map(item => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent, isDraft = false) => {
+    e.preventDefault();
+
+    if (!merchant || amount <= 0) {
+      alert('Please provide a valid Merchant and Amount.');
+      return;
+    }
+
+    createExpense({
+      title: title || `${category} - ${merchant}`,
+      category,
+      amount,
+      currency: 'USD',
+      date,
+      paymentMethod,
+      merchant,
+      businessPurpose,
+      billable,
+      location,
+      description,
+      receiptUrl,
+      taxAmount,
+      referenceNumber,
+      tags: tagsInput ? tagsInput.split(',').map(t => t.trim()) : [],
+      items: lineItems.map(item => ({
+        id: item.id,
+        description: item.description,
+        amount: item.amount,
+        taxAmount: item.taxAmount,
+        category: category
+      })),
+      isDraft
+    });
+
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.5 }
+    });
+
+    setCurrentTab('expenses');
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fadeIn">
+      {/* Form Area */}
+      <div className="lg:col-span-2 space-y-6">
+        <div className="glass-panel p-6 rounded-3xl space-y-6">
+          <div className="border-b border-white/[0.06] pb-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-brand-purple-400" />
+              File New Expense Claim
+            </h2>
+            <p className="text-gray-400 text-xs mt-0.5">
+              Fill details manually or upload a digital receipt for instant OCR scanning.
+            </p>
+          </div>
+
+          <form onSubmit={e => handleSubmit(e, false)} className="space-y-6">
+            {/* Row 1 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Expense Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. AWS Cloud July"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Expense Category *</label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value as ExpenseCategory)}
+                  className="w-full bg-[#090A0F] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white"
+                >
+                  <option value="Meals">Meals</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Accommodation">Accommodation</option>
+                  <option value="Taxi">Taxi</option>
+                  <option value="Flight">Flight</option>
+                  <option value="Office Supplies">Office Supplies</option>
+                  <option value="Software Subscription">Software Subscription</option>
+                  <option value="Cloud Services">Cloud Services</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Amount ($) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amount || ''}
+                  onChange={e => setAmount(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-sans"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Date *</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-sans"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Payment Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
+                  className="w-full bg-[#090A0F] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-sans"
+                >
+                  <option value="UPI">UPI</option>
+                  <option value="Corporate Card">Corporate Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Row 3 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Merchant / Vendor *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Amazon Web Services"
+                  value={merchant}
+                  onChange={e => setMerchant(e.target.value)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-sans"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Location / City</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Bengaluru, India"
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-sans"
+                />
+              </div>
+            </div>
+
+            {/* Row 4 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">GST Number (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 29ABCDE1234F1Z5"
+                  value={gstNumber}
+                  onChange={e => setGstNumber(e.target.value)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-sans">Tax Amount Included ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={taxAmount || ''}
+                  onChange={e => setTaxAmount(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-sans"
+                />
+              </div>
+            </div>
+
+            {/* Row 5 */}
+            <div className="space-y-1.5">
+              <label className="text-xs text-gray-400 font-sans">Business Purpose</label>
+              <textarea
+                placeholder="Brief justification note..."
+                value={businessPurpose}
+                onChange={e => setBusinessPurpose(e.target.value)}
+                rows={3}
+                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl p-3 text-xs text-white font-sans focus:border-brand-purple-500/50"
+              />
+            </div>
+
+            {/* Line items details */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-t border-white/[0.04] pt-4">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Itemized Line Items</h4>
+                <button
+                  type="button"
+                  onClick={handleAddLineItem}
+                  className="flex items-center gap-1 text-[10px] text-brand-purple-400 hover:text-brand-purple-300 font-semibold"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Line Item
+                </button>
+              </div>
+
+              {lineItems.length > 0 && (
+                <div className="space-y-2">
+                  {lineItems.map((item, index) => (
+                    <div key={item.id} className="flex gap-2 items-center bg-white/[0.01] p-2 rounded-xl border border-white/[0.04]">
+                      <input
+                        type="text"
+                        placeholder="Description"
+                        value={item.description}
+                        onChange={e => handleLineItemChange(item.id, 'description', e.target.value)}
+                        className="flex-1 bg-transparent border-none text-xs text-white focus:ring-0"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Amount"
+                        value={item.amount || ''}
+                        onChange={e => handleLineItemChange(item.id, 'amount', parseFloat(e.target.value) || 0)}
+                        className="w-20 bg-transparent border-none text-xs text-white text-right focus:ring-0 font-sans"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLineItem(item.id)}
+                        className="text-gray-500 hover:text-rose-500 p-1.5 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 border-t border-white/[0.04] pt-6 justify-end">
+              <button
+                type="button"
+                onClick={e => handleSubmit(e, true)}
+                className="px-5 py-2.5 rounded-xl border border-white/[0.06] hover:bg-white/[0.04] text-xs text-gray-300 transition-colors"
+              >
+                Save as Draft
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-semibold text-xs shadow-md transition-all"
+              >
+                Submit Expense Claim
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* OCR Simulator Side Panel */}
+      <div className="space-y-6">
+        {/* Receipt Drag & Drop Box */}
+        <label
+          htmlFor="receipt-file-uploader"
+          className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center border-dashed border-2 border-[#ffffff0a] text-center min-h-[220px] cursor-pointer hover:border-brand-purple-500/20 transition-all duration-200"
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => {
+            e.preventDefault();
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              handleFileUpload(e.dataTransfer.files[0]);
+            }
+          }}
+        >
+          <input
+            type="file"
+            id="receipt-file-uploader"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={e => {
+              if (e.target.files && e.target.files[0]) {
+                handleFileUpload(e.target.files[0]);
+              }
+            }}
+          />
+          {isScanning ? (
+            <div className="space-y-4 w-full flex flex-col items-center justify-center">
+              <div className="relative w-16 h-16 rounded-full border-4 border-brand-purple-500/20 border-t-brand-purple-500 animate-spin flex items-center justify-center" />
+              <div className="w-full max-w-[120px] bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
+                <div className="bg-brand-purple-500 h-full transition-all" style={{ width: `${scanProgress}%` }} />
+              </div>
+              <span className="text-[10px] text-brand-orange-400 font-bold tracking-widest uppercase">
+                AI SCANNING BEAM ({scanProgress}%)
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="p-4 bg-brand-purple-500/10 rounded-2xl text-brand-purple-400 mb-4 animate-pulse">
+                <UploadCloud className="w-8 h-8" />
+              </div>
+              <h3 className="text-xs font-bold text-white uppercase">Upload Receipt</h3>
+              <p className="text-[10px] text-gray-500 font-sans mt-2 leading-relaxed">
+                {receiptUrl ? (
+                  <span className="text-brand-purple-400 font-semibold truncate block max-w-[180px]">
+                    Verified: {receiptUrl.split('/').pop()?.slice(-20)}
+                  </span>
+                ) : (
+                  <>PNG, JPEG, PDF up to 10MB.<br />Click to upload or drag & drop file here.</>
+                )}
+              </p>
+            </>
+          )}
+        </label>
+
+        {/* OCR Presets */}
+        <div className="glass-panel p-6 rounded-3xl space-y-4">
+          <h3 className="text-xs font-extrabold text-white tracking-widest uppercase flex items-center gap-1.5">
+            <Zap className="w-4 h-4 text-brand-orange-500 shrink-0" />
+            AI Scanner Presets
+          </h3>
+          <p className="text-[10px] text-gray-500 font-sans leading-relaxed">
+            Click a mockup document below to simulate real-time Optical Character Recognition (OCR) data parsing and form auto-fill.
+          </p>
+
+          <div className="space-y-2">
+            {ocrPresets.map(preset => (
+              <button
+                key={preset.name}
+                onClick={() => startOcrScan(preset)}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-left hover:bg-brand-purple-500/10 hover:border-brand-purple-500/20 transition-all group"
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-white truncate leading-tight group-hover:text-brand-purple-300">
+                    {preset.name}
+                  </span>
+                  <span className="text-[9px] text-gray-500 font-sans mt-0.5 truncate">
+                    {preset.filename}
+                  </span>
+                </div>
+                <span className="text-[10px] text-brand-orange-400 font-bold font-sans">
+                  ${preset.amount}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
