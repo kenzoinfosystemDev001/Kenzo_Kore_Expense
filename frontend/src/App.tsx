@@ -15,7 +15,7 @@ import { AuthView } from './components/AuthView';
 
 function App() {
   const { currentTab, isAuthenticated } = useApp();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   // If not logged in, force render the login screen
   if (!isAuthenticated) {
@@ -50,6 +50,14 @@ function App() {
     <div className="flex bg-[#090A0F] min-h-screen text-[#F3F4F6] font-sans selection:bg-brand-purple-500 selection:text-white relative">
       {/* Dynamic Confetti Canvas placement holder */}
       <canvas id="confetti-canvas" />
+
+      {/* Mobile Sidebar Overlay Backdrop */}
+      {!collapsed && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
 
       {/* Sidebar Navigation */}
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />

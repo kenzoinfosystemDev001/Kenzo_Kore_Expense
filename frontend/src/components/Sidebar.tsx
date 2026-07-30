@@ -41,9 +41,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
 
   return (
     <aside
-      className={`glass-panel border-r border-[#ffffff0a] flex flex-col transition-all duration-300 ${
-        collapsed ? 'w-20' : 'w-64'
-      } shrink-0 h-screen sticky top-0`}
+      className={`glass-panel border-r border-[#ffffff0a] flex flex-col transition-all duration-300 
+      fixed inset-y-0 left-0 z-50 md:sticky md:top-0 h-screen bg-[#090A0F]/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none
+      ${collapsed ? '-translate-x-full md:translate-x-0 md:w-20' : 'translate-x-0 w-64'} 
+      shrink-0`}
     >
       {/* Brand Logo */}
       <div className="p-6 flex items-center gap-3 border-b border-[#ffffff08] overflow-hidden">
