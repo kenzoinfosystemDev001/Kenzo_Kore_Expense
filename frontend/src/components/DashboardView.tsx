@@ -29,13 +29,13 @@ import {
 } from 'recharts';
 
 export const DashboardView: React.FC = () => {
-  const { currentUser, expenses, budgets, setCurrentTab } = useApp();
+  const { currentUser, expenses, budgets, setCurrentTab, users, deleteUser } = useApp();
 
   // Helper variables
-  const isEmployee = currentUser.role === 'Employee';
+  const isEmployee = currentUser?.role === 'Employee';
 
   // Calculations for employee context
-  const empExpenses = expenses.filter(e => e.employeeId === currentUser.id);
+  const empExpenses = expenses.filter(e => e.employeeId === currentUser?.id);
   const pendingReimbursement = empExpenses
     .filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance' || e.status === 'Approved')
     .reduce((sum, e) => sum + e.amount, 0);
@@ -49,7 +49,7 @@ export const DashboardView: React.FC = () => {
   const allSpend = expenses.reduce((sum, e) => sum + e.amount, 0);
   const companyPending = expenses.filter(e => e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
   const companyReimbursed = expenses.filter(e => e.status === 'Reimbursed').reduce((sum, e) => sum + e.amount, 0);
-  const totalEmployeesCount = 4; // Mock users
+  const totalEmployeesCount = users.length;
 
   // Prepare chart data for employee (spend trend)
   const employeeTrendData = [
@@ -398,6 +398,79 @@ export const DashboardView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Admin / Super Admin Employee Directory Control Center */}
+      {!isEmployee && (
+        <div className="glass-panel p-6 rounded-3xl space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-semibold text-white tracking-wide uppercase flex items-center gap-2">
+                <Users2 className="w-4 h-4 text-brand-orange-400" />
+                Corporate Employee Directory Control
+              </h3>
+              <p className="text-xs text-gray-400 font-sans mt-0.5">
+                Admin & Super Admin permission to add and delete employees from Neon PostgreSQL database.
+              </p>
+            </div>
+            <button
+              onClick={() => setCurrentTab('settings')}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-purple-600/20 border border-brand-purple-500/30 text-brand-purple-300 hover:bg-brand-purple-600/30 text-xs font-semibold transition-all"
+            >
+              <span>Manage & Add Employees</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-white/[0.04] bg-white/[0.01]">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-gray-500 font-medium">
+                  <th className="p-4 uppercase">Employee Name</th>
+                  <th className="p-4 uppercase">Corporate Email</th>
+                  <th className="p-4 uppercase">Role</th>
+                  <th className="p-4 uppercase">Designation</th>
+                  <th className="p-4 uppercase text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {users.map(u => (
+                  <tr key={u.id} className="hover:bg-white/[0.02] transition-colors duration-150">
+                    <td className="p-4 font-bold text-white flex items-center gap-2.5">
+                      <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover" />
+                      <span>{u.name}</span>
+                    </td>
+                    <td className="p-4 text-gray-300 font-sans">{u.email}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        u.role === 'Super Admin' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                        u.role === 'Admin' ? 'bg-brand-purple-500/10 text-brand-purple-400 border border-brand-purple-500/20' :
+                        'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      }`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-400 font-sans">{u.designation}</td>
+                    <td className="p-4 text-right">
+                      {u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete employee ${u.name} from Neon PostgreSQL?`)) {
+                              deleteUser(u.id);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[11px] font-semibold border border-rose-500/20 transition-all"
+                        >
+                          Delete Employee
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -48,16 +48,16 @@ async function main() {
     data: { id: 'dept_exec', name: 'Executive Suite', code: 'EXE', budgetLimit: 50000.0 }
   });
 
-  // 4. Create Users
+  // 4. Create Users matching Corporate Directory
   const user1 = await prisma.user.create({
     data: {
       id: 'emp_1',
-      email: 'sujal.kumar@kenzo.com',
+      email: 'Sujal.kumar@kenzoinfosystems.com',
       password: 'password123',
       name: 'Sujal Kumar',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'EMPLOYEE',
-      designation: 'Senior Frontend Engineer',
+      designation: 'Full-Stack Engineer',
       departmentId: deptEng.id,
       costCenterId: ccDev.id,
       gstNumber: '29ABCDE1234F1Z5'
@@ -67,12 +67,12 @@ async function main() {
   const mgr = await prisma.user.create({
     data: {
       id: 'mgr_1',
-      email: 'vikram.aditya@kenzo.com',
+      email: 'Chanchalini.saini@kenzoinfosystems.com',
       password: 'password123',
-      name: 'Vikram Aditya',
+      name: 'Chanchalani saini',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'ADMIN',
-      designation: 'Engineering Manager',
+      designation: 'Managing Director',
       departmentId: deptEng.id,
       costCenterId: ccDev.id,
       gstNumber: '29ABCDE1234F1Z5'
@@ -82,12 +82,12 @@ async function main() {
   const finance = await prisma.user.create({
     data: {
       id: 'admin_1',
-      email: 'finance.admin@kenzo.com',
+      email: 'Ankit.sethi@kenzoinfosystems.com',
       password: 'password123',
-      name: 'Kenzo HR & Admin',
+      name: 'Ankit Sethi',
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'ADMIN',
-      designation: 'VP of Finance & Ops',
+      designation: 'Head of sales & busssiness',
       departmentId: deptOps.id,
       costCenterId: ccCorp.id,
       gstNumber: '29ABCDE1234F1Z5'
@@ -97,9 +97,9 @@ async function main() {
   const superAdmin = await prisma.user.create({
     data: {
       id: 'super_1',
-      email: 'pradeep@kenzo.com',
+      email: 'Jitender.saini@kenzoinfosystems.com',
       password: 'password123',
-      name: 'Pradeep Kenzo',
+      name: 'Jitender saini',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'SUPER_ADMIN',
       designation: 'CEO & Founder',

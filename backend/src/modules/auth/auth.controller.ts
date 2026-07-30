@@ -18,8 +18,8 @@ export class AuthController {
   async login(@Body() body: { email: string; password?: string }) {
     const cleanEmail = (body.email || 'sujal.kumar@kenzo.com').trim().toLowerCase();
 
-    let user = await this.prisma.user.findUnique({
-      where: { email: cleanEmail }
+    let user = await this.prisma.user.findFirst({
+      where: { email: { equals: cleanEmail, mode: 'insensitive' } }
     });
 
     // Auto-create user if not yet seeded in Neon PostgreSQL so login never fails
