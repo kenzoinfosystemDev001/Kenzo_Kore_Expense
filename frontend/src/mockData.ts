@@ -333,35 +333,4 @@ export const mockExpenses: Expense[] = [
   }
 ];
 
-export const mockAuditLogs: AuditLog[] = [
-  {
-    id: 'log_1',
-    timestamp: '2026-07-30T10:15:00Z',
-    userId: 'super_1',
-    userName: 'Pradeep Kenzo',
-    userRole: 'Super Admin',
-    action: 'POLICY_UPDATE',
-    details: 'Updated Meals Policy Daily Limit to $100 for Employees.',
-    ipAddress: '192.168.1.100'
-  },
-  {
-    id: 'log_2',
-    timestamp: '2026-07-29T18:00:00Z',
-    userId: 'admin_1',
-    userName: 'Kenzo HR & Admin',
-    userRole: 'Admin',
-    action: 'BUDGET_REALLOCATION',
-    details: 'Allocated extra $5000 to Q3 Global Travel budget from General Admin.',
-    ipAddress: '192.168.1.105'
-  },
-  {
-    id: 'log_3',
-    timestamp: '2026-07-28T14:45:00Z',
-    userId: 'mgr_1',
-    userName: 'Vikram Aditya',
-    userRole: 'Admin',
-    action: 'EXPENSE_APPROVED',
-    details: 'Approved expense exp_101 (AWS Hosting) on stage 1.',
-    ipAddress: '192.168.1.102'
-  }
-];
+export const mockAuditLogs: AuditLog[] = [];
