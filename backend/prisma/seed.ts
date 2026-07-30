@@ -53,6 +53,7 @@ async function main() {
     data: {
       id: 'emp_1',
       email: 'sujal.kumar@kenzo.com',
+      password: 'password123',
       name: 'Sujal Kumar',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'EMPLOYEE',
@@ -67,6 +68,7 @@ async function main() {
     data: {
       id: 'mgr_1',
       email: 'vikram.aditya@kenzo.com',
+      password: 'password123',
       name: 'Vikram Aditya',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'ADMIN',
@@ -81,6 +83,7 @@ async function main() {
     data: {
       id: 'admin_1',
       email: 'finance.admin@kenzo.com',
+      password: 'password123',
       name: 'Kenzo HR & Admin',
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'ADMIN',
@@ -95,6 +98,7 @@ async function main() {
     data: {
       id: 'super_1',
       email: 'pradeep@kenzo.com',
+      password: 'password123',
       name: 'Pradeep Kenzo',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&h=150&q=80',
       role: 'SUPER_ADMIN',

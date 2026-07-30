@@ -24,6 +24,7 @@ interface AppContextProps {
   }) => Promise<void>;
   logout: () => void;
   deleteUser: (userId: string) => Promise<void>;
+  updateUserPassword: (userId: string, newPassword: string) => Promise<boolean>;
   createExpense: (expenseData: {
     title: string;
     category: ExpenseCategory;
@@ -199,6 +200,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const updateUserPassword = async (userId: string, newPassword: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      });
+      if (res.ok) {
+        addAuditLog('USER_PASSWORD_UPDATED', `Updated security credentials for user ID ${userId} in Neon DB`);
+        await refreshData();
+        return true;
+      }
+    } catch (err) {
+      console.error('Update password error: ', err);
+    }
+    return false;
+  };
+
   const logout = () => {
     localStorage.removeItem('kenzo_kore_jwt');
     setCurrentUser(null);
@@ -335,6 +354,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         signup,
         logout,
         deleteUser,
+        updateUserPassword,
         createExpense,
         updateExpenseStatus,
         updateExpense,

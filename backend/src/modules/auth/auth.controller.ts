@@ -135,21 +135,38 @@ export class AuthController {
     };
   }
 
-  // Update employee profile in Neon PostgreSQL
+  // Update employee profile & password in Neon PostgreSQL
   @Put('users/:id')
-  async updateUser(@Param('id') id: string, @Body() body: { name?: string; email?: string; designation?: string }) {
+  async updateUser(@Param('id') id: string, @Body() body: { name?: string; email?: string; designation?: string; password?: string }) {
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
         name: body.name,
         email: body.email ? body.email.toLowerCase() : undefined,
-        designation: body.designation
+        designation: body.designation,
+        password: body.password ? body.password : undefined
       }
     });
 
     return {
-      message: 'User updated in Neon DB',
+      message: 'User updated successfully in Neon DB',
       user: updated
+    };
+  }
+
+  // Change password endpoint (usable by user for self, or admin/superadmin for any user)
+  @Put('users/:id/password')
+  async changePassword(@Param('id') id: string, @Body() body: { password: string }) {
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: body.password
+      }
+    });
+
+    return {
+      message: 'Password updated successfully in Neon DB',
+      userId: updated.id
     };
   }
 }
