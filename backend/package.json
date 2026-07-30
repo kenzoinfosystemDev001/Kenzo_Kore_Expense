@@ -8,7 +8,8 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "start:prod": "node dist/src/main.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
