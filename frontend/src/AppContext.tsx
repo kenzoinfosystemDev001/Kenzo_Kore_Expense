@@ -2,6 +2,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Expense, Budget, Policy, AuditLog, ExpenseStatus, ExpenseCategory, PaymentMethod, ExpenseItem } from './types';
 import { mockBudgets, mockPolicies, mockAuditLogs } from './mockData';
 
+export interface ApprovalToast {
+  id: string;
+  employeeId: string;
+  topic: string;
+  type: string;
+  value: number;
+}
+
 interface AppContextProps {
   currentUser: User | null;
   isAuthenticated: boolean;
@@ -11,6 +19,8 @@ interface AppContextProps {
   policies: Policy[];
   auditLogs: AuditLog[];
   currentTab: string;
+  approvalToast: ApprovalToast | null;
+  dismissApprovalToast: () => void;
   setCurrentTab: (tab: string) => void;
   switchUser: (userId: string) => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -291,8 +301,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const [approvalToast, setApprovalToast] = useState<ApprovalToast | null>(null);
+  const dismissApprovalToast = () => setApprovalToast(null);
+
   const updateExpenseStatus = async (expenseId: string, status: ExpenseStatus, comment?: string) => {
     try {
+      const targetExp = expenses.find(e => e.id === expenseId);
+      if (targetExp && (status === 'Approved' || status === 'Reimbursed')) {
+        setApprovalToast({
+          id: targetExp.id,
+          employeeId: targetExp.employeeId,
+          topic: targetExp.title,
+          type: targetExp.category,
+          value: targetExp.amount
+        });
+      }
+
       let endpoint = 'approve';
       if (status === 'Returned') endpoint = 'return';
       if (status === 'Rejected') endpoint = 'reject';
@@ -374,6 +398,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         policies,
         auditLogs,
         currentTab,
+        approvalToast,
+        dismissApprovalToast,
         setCurrentTab,
         switchUser,
         login,

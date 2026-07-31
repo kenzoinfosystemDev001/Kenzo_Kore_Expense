@@ -14,11 +14,11 @@ import { AIChatAssistant } from './components/AIChatAssistant';
 import { AuthView } from './components/AuthView';
 
 function App() {
-  const { currentTab, isAuthenticated } = useApp();
+  const { currentTab, isAuthenticated, currentUser, approvalToast, dismissApprovalToast } = useApp();
   const [collapsed, setCollapsed] = useState(true);
 
-  // If not logged in, force render the login screen
-  if (!isAuthenticated) {
+  // If not logged in or currentUser not loaded, force render the login screen
+  if (!isAuthenticated || !currentUser) {
     return <AuthView />;
   }
 
@@ -115,6 +115,39 @@ function App() {
             </div>
             <div className="flex-1 overflow-y-auto">
               <AIChatAssistant />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Targeted Employee Approval Pop-Up Notification */}
+      {approvalToast && currentUser?.id === approvalToast.employeeId && (
+        <div className="fixed top-6 right-6 z-50 animate-bounce max-w-sm w-full bg-[#0B172A] border-2 border-[#00C8FF] rounded-2xl p-4 shadow-[0_0_40px_rgba(0,200,255,0.4)] space-y-3">
+          <div className="flex items-center justify-between border-b border-[#00C8FF]/20 pb-2">
+            <div className="flex items-center gap-2 text-[#00C8FF] font-bold text-xs uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+              <span>Expense Approved! 🎉</span>
+            </div>
+            <button
+              onClick={dismissApprovalToast}
+              className="text-gray-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded-md hover:bg-white/10 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-2 text-xs font-sans">
+            <div className="flex justify-between items-center bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.04]">
+              <span className="text-gray-400 font-medium">Topic</span>
+              <span className="font-bold text-white truncate max-w-[180px]">{approvalToast.topic}</span>
+            </div>
+            <div className="flex justify-between items-center bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.04]">
+              <span className="text-gray-400 font-medium">Type</span>
+              <span className="font-semibold text-[#00C8FF]">{approvalToast.type}</span>
+            </div>
+            <div className="flex justify-between items-center bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.04]">
+              <span className="text-gray-400 font-medium">Value</span>
+              <span className="font-extrabold text-emerald-400 text-sm">₹{approvalToast.value.toFixed(2)}</span>
             </div>
           </div>
         </div>

@@ -460,7 +460,7 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
-                {users.map(u => (
+                {(users || []).map(u => (
                   <tr key={u.id} className="hover:bg-white/[0.02] transition-colors duration-150">
                     <td className="p-4 font-bold text-white flex items-center gap-2.5">
                       <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-white/10" style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', maxWidth: '28px', maxHeight: '28px' }} />
