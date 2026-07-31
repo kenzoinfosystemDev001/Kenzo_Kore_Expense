@@ -47,24 +47,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
       shrink-0`}
     >
       {/* Brand Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-[#ffffff08] overflow-hidden">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-purple-600 to-brand-orange-500 flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-lg">
-          K
-        </div>
+      <div className="p-5 flex items-center gap-3 border-b border-[#00C8FF]/15 overflow-hidden">
+        <svg className="w-9 h-9 text-[#00A3FF] shrink-0 filter drop-shadow-[0_0_10px_rgba(0,163,255,0.6)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M25 65C35 65 42 58 50 50C58 42 65 35 75 35C85 35 92 42 92 50C92 58 85 65 75 65C65 65 58 58 50 50C42 42 35 35 25 35C15 35 8 42 8 50C8 58 15 65 25 65Z" stroke="url(#sidebar-cyan-grad)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+          <defs>
+            <linearGradient id="sidebar-cyan-grad" x1="0" y1="0" x2="100" y2="100">
+              <stop offset="0%" stopColor="#00A3FF" />
+              <stop offset="50%" stopColor="#00C8FF" />
+              <stop offset="100%" stopColor="#00E0FF" />
+            </linearGradient>
+          </defs>
+        </svg>
         {!collapsed && (
           <div className="flex flex-col">
-            <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-brand-purple-300 font-sans tracking-tight leading-none text-base">
-              Kenzo Kore
+            <span className="font-extrabold text-white font-sans tracking-widest leading-none text-base">
+              KENZO
             </span>
-            <span className="text-[10px] text-brand-orange-400 font-medium tracking-widest uppercase mt-0.5">
-              Expense
+            <span className="text-[9px] text-[#00C8FF] font-semibold tracking-widest uppercase mt-0.5">
+              INFOSYSTEMS
             </span>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto">
         {navItems.map(item => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -72,22 +79,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
             <button
               key={item.id}
               onClick={() => setCurrentTab(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-200 group relative cursor-pointer ${
                 isActive
-                  ? 'bg-gradient-to-r from-brand-purple-900/40 to-brand-purple-800/10 border border-brand-purple-500/20 text-white font-medium'
-                  : 'text-gray-400 hover:text-white hover:bg-white/[0.03] border border-transparent'
+                  ? 'bg-gradient-to-r from-[#00A3FF]/20 via-[#00C8FF]/10 to-transparent border border-[#00C8FF]/30 text-white font-semibold shadow-[0_0_15px_rgba(0,163,255,0.15)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
               }`}
             >
               <Icon
                 className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${
-                  isActive ? 'text-brand-purple-400' : 'text-gray-400 group-hover:text-brand-purple-300'
+                  isActive ? 'text-[#00C8FF]' : 'text-gray-400 group-hover:text-[#00C8FF]'
                 }`}
               />
-              {!collapsed && <span className="text-sm font-sans tracking-wide">{item.name}</span>}
+              {!collapsed && <span className="text-xs font-sans tracking-wide">{item.name}</span>}
 
               {/* Active Indicator Pin */}
               {isActive && (
-                <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-brand-purple-400 to-brand-orange-500 rounded-l-md" />
+                <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-[#00A3FF] to-[#00E0FF] rounded-l-md shadow-[0_0_8px_#00C8FF]" />
               )}
             </button>
           );
@@ -95,21 +102,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
       </nav>
 
       {/* User Quick Info */}
-      <div className="p-4 border-t border-[#ffffff08] overflow-hidden">
+      <div className="p-4 border-t border-[#00C8FF]/10 overflow-hidden">
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
           <img
             src={currentUser.avatar}
             alt={currentUser.name}
-            className="w-10 h-10 rounded-full border border-brand-purple-500/20 object-cover shadow-sm ring-2 ring-brand-purple-900/30"
+            className="w-8 h-8 rounded-full object-cover border border-[#00C8FF]/30"
           />
           {!collapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-white truncate leading-tight">
-                {currentUser.name}
-              </span>
-              <span className="text-[10px] text-gray-500 truncate mt-0.5 uppercase tracking-wide">
-                {currentUser.role}
-              </span>
+            <div className="flex flex-col text-left min-w-0">
+              <span className="text-xs font-bold text-white truncate">{currentUser.name}</span>
+              <span className="text-[10px] text-[#00C8FF] uppercase tracking-wider truncate font-semibold">{currentUser.role}</span>
             </div>
           )}
         </div>

@@ -473,7 +473,7 @@ export const CreateExpenseView: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-semibold text-xs shadow-md transition-all"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all cursor-pointer"
               >
                 Submit Expense Claim
               </button>

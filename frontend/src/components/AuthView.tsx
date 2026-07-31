@@ -37,20 +37,37 @@ export const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#090A0F] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background radial glow */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-brand-purple-600/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-brand-orange-500/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#030712] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Tech background cybernetic glow overlays */}
+      <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] rounded-full bg-[#00A3FF]/10 blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/3 w-[450px] h-[450px] rounded-full bg-[#00C8FF]/10 blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-md glass-panel rounded-3xl p-8 border border-white/[0.08] shadow-2xl space-y-8 relative z-10">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-purple-600 to-brand-orange-500 flex items-center justify-center text-white font-bold text-2xl shadow-xl animate-pulse-ring">
-            K
+      {/* Cyber Grid Lines */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00a3ff0a_1px,transparent_1px),linear-gradient(to_bottom,#00a3ff0a_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+
+      <div className="w-full max-w-md glass-panel rounded-3xl p-8 border border-[#00C8FF]/20 shadow-[0_0_50px_rgba(0,163,255,0.15)] space-y-8 relative z-10">
+        {/* Kenzo Infosystems Brand Header */}
+        <div className="flex flex-col items-center text-center space-y-3">
+          {/* Official Kenzo Infinity Ribbon Logo */}
+          <div className="flex items-center gap-2.5">
+            <svg className="w-10 h-10 text-[#00A3FF] filter drop-shadow-[0_0_12px_rgba(0,163,255,0.6)] animate-pulse" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M25 65C35 65 42 58 50 50C58 42 65 35 75 35C85 35 92 42 92 50C92 58 85 65 75 65C65 65 58 58 50 50C42 42 35 35 25 35C15 35 8 42 8 50C8 58 15 65 25 65Z" stroke="url(#cyan-grad)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+              <defs>
+                <linearGradient id="cyan-grad" x1="0" y1="0" x2="100" y2="100">
+                  <stop offset="0%" stopColor="#00A3FF" />
+                  <stop offset="50%" stopColor="#00C8FF" />
+                  <stop offset="100%" stopColor="#00E0FF" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="flex flex-col text-left">
+              <span className="text-xl font-extrabold text-white tracking-widest font-sans flex items-center gap-1">
+                KENZO <span className="text-[#00C8FF] text-xs font-semibold tracking-widest block -mt-1">INFOSYSTEMS</span>
+              </span>
+            </div>
           </div>
           <div>
-            <h2 className="text-2xl font-extrabold text-white font-sans tracking-tight">Kenzo Kore Expense</h2>
-            <p className="text-gray-400 text-xs mt-1">Enterprise-Grade Financial Control Center</p>
+            <h2 className="text-sm font-bold text-gray-300 font-sans tracking-wide uppercase mt-1">Enterprise Financial Control Center</h2>
           </div>
         </div>
 
@@ -64,8 +81,8 @@ export const AuthView: React.FC = () => {
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs text-gray-400">Corporate Email</label>
-            <div className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-gray-400 focus-within:border-brand-purple-500/50 transition-colors">
-              <Mail className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center gap-2.5 bg-[#030712]/80 border border-[#00C8FF]/15 rounded-xl px-3.5 py-2.5 text-gray-400 focus-within:border-[#00C8FF] transition-all duration-200">
+              <Mail className="w-4 h-4 text-[#00C8FF]" />
               <input
                 type="email"
                 value={email}
@@ -80,10 +97,10 @@ export const AuthView: React.FC = () => {
           <div className="space-y-1.5">
             <div className="flex justify-between">
               <label className="text-xs text-gray-400">Security Password</label>
-              <a href="#" className="text-[10px] text-brand-purple-400 hover:underline" onClick={e => { e.preventDefault(); alert('Password resets are managed by your System Administrator.'); }}>Forgot password?</a>
+              <a href="#" className="text-[10px] text-[#00C8FF] hover:underline" onClick={e => { e.preventDefault(); alert('Password resets are managed by your System Administrator.'); }}>Forgot password?</a>
             </div>
-            <div className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-gray-400 focus-within:border-brand-purple-500/50 transition-colors">
-              <Lock className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center gap-2.5 bg-[#030712]/80 border border-[#00C8FF]/15 rounded-xl px-3.5 py-2.5 text-gray-400 focus-within:border-[#00C8FF] transition-all duration-200">
+              <Lock className="w-4 h-4 text-[#00C8FF]" />
               <input
                 type="password"
                 value={password}
@@ -98,15 +115,17 @@ export const AuthView: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-semibold text-xs shadow-lg transition-all duration-200"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(0,163,255,0.35)] hover:shadow-[0_0_35px_rgba(0,200,255,0.55)] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            {loading ? 'Validating credentials...' : 'Secure Authorization'}
+            {loading ? 'Authenticating...' : 'Secure Authorization'}
           </button>
-
-          <div className="text-[10px] text-center text-gray-500 font-sans mt-4">
-            Protected by JWT & secure Bcrypt hashing algorithms.
-          </div>
         </form>
+
+        <div className="pt-2 text-center border-t border-white/[0.04]">
+          <p className="text-[10px] text-gray-500 font-sans">
+            Protected by JWT & secure Bcrypt hashing algorithms.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -90,15 +90,15 @@ export const AIChatAssistant: React.FC = () => {
         {messages.map((m, idx) => (
           <div
             key={idx}
-            className={`flex flex-col gap-1 max-w-[85%] ${
+            className={`flex flex-col gap-1 ${
               m.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
             }`}
           >
             <div
-              className={`p-3 rounded-2xl ${
+              className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed font-sans ${
                 m.sender === 'user'
-                  ? 'bg-brand-purple-600 text-white rounded-br-none'
-                  : 'bg-white/[0.03] border border-white/[0.06] text-gray-300 rounded-bl-none'
+                  ? 'bg-gradient-to-r from-[#0077B6] to-[#00A3FF] text-white shadow-[0_0_15px_rgba(0,163,255,0.25)] rounded-br-none'
+                  : 'bg-[#0B172A] border border-[#00C8FF]/15 text-gray-200 rounded-bl-none'
               }`}
             >
               {m.text}
@@ -109,10 +109,10 @@ export const AIChatAssistant: React.FC = () => {
 
         {isTyping && (
           <div className="flex gap-1.5 items-center mr-auto text-gray-500 italic p-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-purple-500 animate-bounce" />
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-purple-500 animate-bounce delay-75" />
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-purple-500 animate-bounce delay-150" />
-            <span className="text-[10px] ml-1 uppercase font-bold tracking-widest text-gray-600 font-sans">Processing audit</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00C8FF] animate-bounce" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00C8FF] animate-bounce delay-75" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00C8FF] animate-bounce delay-150" />
+            <span className="text-[10px] ml-1 uppercase font-bold tracking-widest text-[#00C8FF] font-sans">Processing audit</span>
           </div>
         )}
       </div>
@@ -125,7 +125,7 @@ export const AIChatAssistant: React.FC = () => {
             <button
               key={p.label}
               onClick={() => handleSend(p.query)}
-              className="text-[9px] font-semibold bg-white/[0.03] border border-white/[0.06] hover:bg-brand-purple-500/10 hover:text-brand-purple-300 text-gray-400 px-2 py-1 rounded-full transition-all"
+              className="text-[9px] font-semibold bg-[#030712] border border-[#00C8FF]/20 hover:bg-[#00A3FF]/15 hover:text-[#00C8FF] text-gray-300 px-2.5 py-1 rounded-full transition-all cursor-pointer"
             >
               {p.label}
             </button>
@@ -133,7 +133,7 @@ export const AIChatAssistant: React.FC = () => {
         </div>
 
         {/* Input box */}
-        <div className="flex gap-2 items-center bg-[#090A0F]/65 border border-white/[0.06] rounded-xl px-3 py-2 focus-within:border-brand-purple-500/50">
+        <div className="flex gap-2 items-center bg-[#030712]/80 border border-[#00C8FF]/15 rounded-xl px-3 py-2 focus-within:border-[#00C8FF] transition-all">
           <input
             type="text"
             placeholder="Ask AI assistant..."
@@ -144,7 +144,7 @@ export const AIChatAssistant: React.FC = () => {
           />
           <button
             onClick={() => handleSend(inputVal)}
-            className="text-brand-purple-400 hover:text-brand-purple-300 transition-colors p-1"
+            className="text-[#00C8FF] hover:text-[#00E0FF] transition-colors p-1 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>

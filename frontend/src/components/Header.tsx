@@ -71,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
   ];
 
   return (
-    <header className="glass-panel sticky top-0 z-40 w-full border-b border-[#ffffff08] px-4 md:px-6 py-4 flex items-center justify-between h-20">
+    <header className="glass-panel sticky top-0 z-40 w-full border-b border-[#00C8FF]/15 px-4 md:px-6 py-4 flex items-center justify-between h-20">
       <div className="flex items-center gap-4">
         {/* Toggle Sidebar Button */}
         <button
@@ -83,11 +83,11 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
 
         {/* Global Search Bar */}
         <div className="relative hidden sm:block">
-          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#00C8FF] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search dashboard... (CMD+K)"
-            className="pl-9 pr-4 py-1.5 w-64 bg-white/[0.03] border border-white/[0.06] focus:border-brand-purple-500/50 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none transition-colors"
+            className="pl-9 pr-4 py-1.5 w-64 bg-[#030712]/60 border border-[#00C8FF]/15 focus:border-[#00C8FF] rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none transition-all duration-200"
           />
         </div>
       </div>
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
       <div className="flex items-center gap-3">
         {/* Active User Badge with Device Photo Upload */}
         {currentUser && (
-          <div className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+          <div className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 bg-[#030712]/60 border border-[#00C8FF]/15 rounded-xl">
             <input
               type="file"
               id="header-user-avatar-input"
@@ -110,14 +110,14 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
               className="relative group cursor-pointer"
               title="Click to upload profile photo from device"
             >
-              <img src={currentUser.avatar} alt={currentUser.name} className="w-6 h-6 rounded-full object-cover border border-white/10 group-hover:opacity-75 transition-opacity" />
+              <img src={currentUser.avatar} alt={currentUser.name} className="w-6.5 h-6.5 rounded-full object-cover border border-[#00C8FF]/30 group-hover:opacity-75 transition-opacity" />
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                 <UploadCloud className="w-3 h-3 text-white" />
               </div>
             </button>
             <div className="flex flex-col text-left">
               <span className="text-xs font-bold text-white leading-tight">{currentUser.name}</span>
-              <span className="text-[9px] text-gray-400">{currentUser.role}</span>
+              <span className="text-[9px] text-[#00C8FF] uppercase tracking-wider font-semibold">{currentUser.role}</span>
             </div>
           </div>
         )}

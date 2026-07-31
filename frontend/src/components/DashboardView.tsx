@@ -5,10 +5,12 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  AlertOctagon,
   ArrowRight,
   TrendingDown,
   DollarSign,
   Briefcase,
+  Users,
   Users2,
   ListRestart
 } from 'lucide-react';
@@ -72,7 +74,7 @@ export const DashboardView: React.FC = () => {
     value: categoryMap[key]
   }));
 
-  const COLORS = ['#7C3AED', '#EA580C', '#10B981', '#3B82F6', '#EC4899', '#F59E0B'];
+  const COLORS = ['#00A3FF', '#00C8FF', '#10B981', '#3B82F6', '#00E0FF', '#38BDF8'];
 
   // Prepare budget progress data for Admin
   const budgetProgressData = budgets.map(b => ({
@@ -86,8 +88,8 @@ export const DashboardView: React.FC = () => {
       {/* Welcome Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white font-sans tracking-tight">
-            Welcome back, {currentUser.name}
+          <h1 className="text-3xl font-extrabold text-white font-sans tracking-tight flex items-center gap-2">
+            Welcome back, <span className="text-[#00C8FF]">{currentUser.name}</span>
           </h1>
           <p className="text-gray-400 text-sm font-sans mt-1">
             Here's what is happening with {isEmployee ? 'your personal' : 'Kenzo Infosystems'} expenses today.
@@ -96,7 +98,7 @@ export const DashboardView: React.FC = () => {
         {isEmployee && (
           <button
             onClick={() => setCurrentTab('new-expense')}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-semibold text-sm shadow-lg hover:shadow-brand-purple-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-sm shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all duration-200"
           >
             Create Expense Claim
             <ArrowRight className="w-4 h-4" />
@@ -118,12 +120,12 @@ export const DashboardView: React.FC = () => {
                     <span className="text-[10px] text-gray-500 font-sans font-medium uppercase tracking-widest">In Queue</span>
                   </div>
                 </div>
-                <div className="p-3 bg-brand-purple-500/10 rounded-xl text-brand-purple-400">
+                <div className="p-3 bg-[#00A3FF]/10 rounded-xl text-[#00C8FF]">
                   <Clock className="w-5 h-5 animate-pulse" />
                 </div>
               </div>
               <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-brand-orange-500" />
+                <TrendingUp className="w-3.5 h-3.5 text-[#00C8FF]" />
                 <span>Awaiting finance clearance</span>
               </div>
             </div>
@@ -143,7 +145,7 @@ export const DashboardView: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
-                <span>Transferred directly to bank account</span>
+                <span>Direct transfers cleared</span>
               </div>
             </div>
 
@@ -152,14 +154,14 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Spent (FY26)</span>
-                  <h3 className="text-2xl font-bold text-white">₹{employeeSpentTotal.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold text-white mt-4">₹{employeeSpentTotal.toFixed(2)}</h3>
                 </div>
-                <div className="p-3 bg-brand-orange-500/10 rounded-xl text-brand-orange-400">
+                <div className="p-3 bg-[#00A3FF]/10 rounded-xl text-[#00C8FF]">
                   <DollarSign className="w-5 h-5" />
                 </div>
               </div>
               <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
-                <span>Calculated from all active claims</span>
+                <span>Submitted YTD</span>
               </div>
             </div>
 
@@ -167,63 +169,62 @@ export const DashboardView: React.FC = () => {
             <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Policy Flagged Claims</span>
-                  <h3 className={`text-2xl font-bold ${policyViolationsCount > 0 ? 'text-amber-500' : 'text-white'}`}>
-                    {policyViolationsCount}
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Policy Compliance</span>
+                  <h3 className={`text-2xl font-bold mt-4 ${policyViolationsCount > 0 ? 'text-amber-500' : 'text-[#00C8FF]'}`}>
+                    {policyViolationsCount > 0 ? `${policyViolationsCount} Flagged` : '100% Compliant'}
                   </h3>
                 </div>
-                <div className={`p-3 rounded-xl ${policyViolationsCount > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'}`}>
-                  <AlertTriangle className="w-5 h-5" />
+                <div className={`p-3 rounded-xl ${policyViolationsCount > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-[#00A3FF]/10 text-[#00C8FF]'}`}>
+                  <AlertOctagon className="w-5 h-5" />
                 </div>
               </div>
-              <div className="mt-4 text-[11px] text-gray-500">
-                <span>{policyViolationsCount > 0 ? 'Needs manager justification note' : 'Excellent! Policy compliant'}</span>
+              <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
+                <span>Automated engine checks</span>
               </div>
             </div>
           </>
         ) : (
           <>
             {/* Admin Card 1 */}
-            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
+            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Company Total Spend</span>
-                  <h3 className="text-2xl font-bold text-white">₹{allSpend.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold text-white mt-4">₹{allSpend.toFixed(2)}</h3>
                 </div>
-                <div className="p-3 bg-brand-purple-500/10 rounded-xl text-brand-purple-400">
+                <div className="p-3 bg-[#00A3FF]/10 rounded-xl text-[#00C8FF]">
                   <DollarSign className="w-5 h-5" />
                 </div>
               </div>
               <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-brand-orange-500 animate-bounce" />
                 <span>Across all departments & categories</span>
               </div>
             </div>
 
             {/* Admin Card 2 */}
-            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
+            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Awaiting Approvals</span>
                   <div className="mt-4 flex items-baseline gap-2">
-                    <h3 className={`text-2xl font-bold ${companyPending > 0 ? 'text-brand-orange-400' : 'text-white'}`}>
+                    <h3 className={`text-2xl font-bold ${companyPending > 0 ? 'text-[#00C8FF]' : 'text-white'}`}>
                       {companyPending}
                     </h3>
                   </div>
                 </div>
-                <div className="p-3 bg-brand-orange-500/10 rounded-xl text-brand-orange-400">
+                <div className="p-3 bg-[#00A3FF]/10 rounded-xl text-[#00C8FF]">
                   <Clock className="w-5 h-5" />
                 </div>
               </div>
-              <div className="mt-4 text-[11px] text-gray-500">
-                <button onClick={() => setCurrentTab('approvals')} className="text-brand-purple-400 hover:underline flex items-center gap-0.5">
-                  Go to Approval Queue <ArrowRight className="w-3 h-3" />
+              <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
+                <button onClick={() => setCurrentTab('approvals')} className="text-[#00C8FF] hover:underline font-semibold flex items-center gap-1">
+                  Go to Approval Queue →
                 </button>
               </div>
             </div>
 
             {/* Admin Card 3 */}
-            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
+            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Reimbursed (Company)</span>
@@ -236,23 +237,23 @@ export const DashboardView: React.FC = () => {
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
               </div>
-              <div className="mt-4 text-[11px] text-gray-500">
+              <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
                 <span>Direct transfers cleared successfully</span>
               </div>
             </div>
 
             {/* Admin Card 4 */}
-            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
+            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Employees</span>
-                  <h3 className="text-2xl font-bold text-white">{totalEmployeesCount}</h3>
+                  <h3 className="text-2xl font-bold text-white mt-4">{totalEmployeesCount}</h3>
                 </div>
-                <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
-                  <Users2 className="w-5 h-5" />
+                <div className="p-3 bg-[#00A3FF]/10 rounded-xl text-[#00C8FF]">
+                  <Users className="w-5 h-5" />
                 </div>
               </div>
-              <div className="mt-4 text-[11px] text-gray-500">
+              <div className="mt-4 text-[11px] text-gray-500 flex items-center gap-1">
                 <span>Kenzo Infosystems directory count</span>
               </div>
             </div>
@@ -266,7 +267,7 @@ export const DashboardView: React.FC = () => {
         <div className="glass-panel p-6 rounded-3xl lg:col-span-2 space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-semibold text-white tracking-wide uppercase">Expense Spend Analysis</h3>
-            <span className="text-[10px] bg-brand-purple-950 text-brand-purple-300 border border-brand-purple-500/20 px-2.5 py-1 rounded-full font-medium uppercase">
+            <span className="text-[10px] bg-[#00A3FF]/10 text-[#00C8FF] border border-[#00C8FF]/20 px-2.5 py-1 rounded-full font-medium uppercase">
               Real-time update
             </span>
           </div>
@@ -278,33 +279,33 @@ export const DashboardView: React.FC = () => {
                 <AreaChart data={employeeTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSpent" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#00A3FF" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#00A3FF" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,163,255,0.06)" />
                   <XAxis dataKey="date" stroke="#ffffff40" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="#ffffff40" fontSize={10} tickLine={false} axisLine={false} tickFormatter={value => `₹${value}`} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#090A0F', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
+                    contentStyle={{ backgroundColor: '#0B172A', borderColor: 'rgba(0,200,255,0.2)', borderRadius: '12px' }}
                     labelStyle={{ color: '#fff' }}
                     formatter={(value: any) => `₹${value}`}
                   />
-                  <Area type="monotone" dataKey="amount" name="Spent (₹)" stroke="#7C3AED" strokeWidth={2} fillOpacity={1} fill="url(#colorSpent)" />
+                  <Area type="monotone" dataKey="amount" name="Spent (₹)" stroke="#00C8FF" strokeWidth={2} fillOpacity={1} fill="url(#colorSpent)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={budgetProgressData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,163,255,0.06)" />
                   <XAxis dataKey="name" stroke="#9ca3af" />
                   <YAxis stroke="#9ca3af" />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#090A0F', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
+                    contentStyle={{ backgroundColor: '#0B172A', borderColor: 'rgba(0,200,255,0.2)', borderRadius: '12px' }}
                   />
                   <Legend wrapperStyle={{ color: '#fff' }} />
-                  <Bar dataKey="Allocated" fill="#1F2937" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Spent" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Allocated" fill="#111827" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Spent" fill="#00A3FF" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

@@ -125,7 +125,7 @@ export const ApprovalQueueView: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAction(exp.id, 'Approved')}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-brand-purple-600 hover:bg-brand-purple-700 text-white font-bold py-2 rounded-xl text-xs transition"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold py-2 rounded-xl text-xs shadow-[0_0_15px_rgba(0,163,255,0.3)] transition"
                   >
                     <Check className="w-3.5 h-3.5" />
                     Approve
