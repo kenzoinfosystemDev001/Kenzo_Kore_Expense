@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp, API_BASE_URL } from '../AppContext';
 import { ExpenseCategory, PaymentMethod } from '../types';
 import {
   UploadCloud,
@@ -134,13 +134,33 @@ export const CreateExpenseView: React.FC = () => {
       });
     }, 200);
   };
-  const handleFileUpload = (file: File) => {
-    // Create local blob URL for live browser previews
-    const fileUrl = URL.createObjectURL(file);
-    setReceiptUrl(fileUrl);
+  const handleFileUpload = async (file: File) => {
+    // Show immediate local preview
+    const localPreviewUrl = URL.createObjectURL(file);
+    setReceiptUrl(localPreviewUrl);
 
     setIsScanning(true);
     setScanProgress(0);
+
+    // Upload file asynchronously to backend (Cloudinary storage)
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/receipts/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.fileUrl) {
+          setReceiptUrl(data.fileUrl);
+        }
+      }
+    } catch (err) {
+      console.error('Receipt Cloudinary upload error:', err);
+    }
 
     const interval = setInterval(() => {
       setScanProgress(prev => {
@@ -294,7 +314,7 @@ export const CreateExpenseView: React.FC = () => {
             {/* Row 2 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400 font-sans">Amount ($) *</label>
+                <label className="text-xs text-gray-400 font-sans">Amount (₹) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -372,7 +392,7 @@ export const CreateExpenseView: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400 font-sans">Tax Amount Included ($)</label>
+                <label className="text-xs text-gray-400 font-sans">Tax Amount Included (₹)</label>
                 <input
                   type="number"
                   step="0.01"

@@ -36,28 +36,28 @@ export const AIChatAssistant: React.FC = () => {
       let replyNode: React.ReactNode = null;
 
       if (text.toLowerCase().includes('budget')) {
-        replyText = "Engineering department spent $48,500 representing 40.4% consumption. AWS Cloud Infrastructure budget is forecasted to exceed allocated limits by September 12. Sales and BD spent $62,100 (65.3% consumption).";
+        replyText = "Engineering department spent ₹48,500 representing 40.4% consumption. AWS Cloud Infrastructure budget is forecasted to exceed allocated limits by September 12. Sales and BD spent ₹62,100 (65.3% consumption).";
         replyNode = (
           <div className="mt-2 p-3 bg-brand-orange-500/10 border border-brand-orange-500/20 rounded-xl space-y-1.5 text-[10px] text-gray-300 font-sans">
             <div className="font-bold text-white flex items-center gap-1.5">
               <span>⚠️ Budget Warning (FY26 Q3)</span>
             </div>
-            <p><strong>Cloud Services:</strong> 76.7% Consumed ($61.4k of $80k limit).</p>
-            <p><strong>Meals & dining:</strong> 61.0% Consumed ($9.1k of $15k limit).</p>
+            <p><strong>Cloud Services:</strong> 76.7% Consumed (₹61.4k of ₹80k limit).</p>
+            <p><strong>Meals & dining:</strong> 61.0% Consumed (₹9.1k of ₹15k limit).</p>
           </div>
         );
       } else if (text.toLowerCase().includes('duplicate')) {
-        replyText = "I found 1 critical duplication warning in the audit queue. An expense titled 'Double Booking Test Expense' submitted by Sujal Kumar on 2026-07-25 ($120.00) matches an approved expense ID exp_102 (JW Marriott Dinner) exactly.";
+        replyText = "I found 1 critical duplication warning in the audit queue. An expense titled 'Double Booking Test Expense' submitted by Sujal Kumar on 2026-07-25 (₹120.00) matches an approved expense ID exp_102 (JW Marriott Dinner) exactly.";
         replyNode = (
           <div className="mt-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-1 text-[10px] text-gray-300 font-sans">
             <p className="font-bold text-white">🔥 Duplicate Match Found</p>
             <p>• <strong>ID exp_106</strong> matches <strong>exp_102</strong></p>
             <p>• <strong>Merchant:</strong> JW Marriott Dining Room</p>
-            <p>• <strong>Claim Value:</strong> $120.00 (same invoice file)</p>
+            <p>• <strong>Claim Value:</strong> ₹120.00 (same invoice file)</p>
           </div>
         );
       } else if (text.toLowerCase().includes('aws') || text.toLowerCase().includes('forecast')) {
-        replyText = "AWS cloud hosting spend is $1,450.50 for July. Forecasted average increases by 8.4% month-over-month due to next-gen SaaS portal migration clusters scaling up. Recommend provisioning spot instances.";
+        replyText = "AWS cloud hosting spend is ₹1,450.50 for July. Forecasted average increases by 8.4% month-over-month due to next-gen SaaS portal migration clusters scaling up. Recommend provisioning spot instances.";
       } else {
         replyText = `Understood. I searched your personal ledger database for "${text}", but no active anomalies or policy alerts were registered under this search index query.`;
       }
