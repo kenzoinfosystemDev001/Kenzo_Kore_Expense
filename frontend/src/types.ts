@@ -153,3 +153,16 @@ export interface AuditLog {
   details: string;
   ipAddress: string;
 }
+
+export interface ApprovedPopup {
+  id: string;
+  expenseId: string;
+  employeeId: string;
+  employeeName: string;
+  title: string;
+  description: string;
+  category: string;
+  amount: number;
+  comment?: string;
+  approvedAt: string;
+}

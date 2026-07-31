@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Expense, Budget, Policy, AuditLog, ExpenseStatus, ExpenseCategory, PaymentMethod, ExpenseItem } from './types';
+import { User, Expense, Budget, Policy, AuditLog, ExpenseStatus, ExpenseCategory, PaymentMethod, ExpenseItem, ApprovedPopup } from './types';
 import { mockBudgets, mockPolicies, mockAuditLogs } from './mockData';
 
 interface AppContextProps {
@@ -53,6 +53,8 @@ interface AppContextProps {
   updateBudget: (id: string, spent: number) => void;
   addAuditLog: (action: string, details: string) => void;
   updatePolicy: (id: string, limit: number, enabled: boolean) => void;
+  approvedPopups: ApprovedPopup[];
+  dismissApprovedPopup: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -289,11 +291,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const [approvedPopups, setApprovedPopups] = useState<ApprovedPopup[]>(() => {
+    try {
+      const saved = localStorage.getItem('kenzo_approved_popups');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const dismissApprovedPopup = (id: string) => {
+    setApprovedPopups(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      localStorage.setItem('kenzo_approved_popups', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const updateExpenseStatus = async (expenseId: string, status: ExpenseStatus, comment?: string) => {
     try {
       let endpoint = 'approve';
       if (status === 'Returned') endpoint = 'return';
       if (status === 'Rejected') endpoint = 'reject';
+
+      // Record targeted employee popup when claim is approved
+      const exp = expenses.find(e => e.id === expenseId);
+      if (exp && (status === 'Approved' || status === 'Reimbursed')) {
+        const newPopup: ApprovedPopup = {
+          id: exp.id + '_' + Date.now(),
+          expenseId: exp.id,
+          employeeId: exp.employeeId,
+          employeeName: exp.employeeName,
+          title: exp.title,
+          description: exp.businessPurpose || exp.description || 'Expense claim verified and approved by Admin.',
+          category: exp.category,
+          amount: exp.amount,
+          comment: comment || 'Verified & Approved',
+          approvedAt: new Date().toISOString()
+        };
+        setApprovedPopups(prev => {
+          const updated = [newPopup, ...prev.filter(p => p.expenseId !== exp.id)];
+          localStorage.setItem('kenzo_approved_popups', JSON.stringify(updated));
+          return updated;
+        });
+      }
 
       await fetch(`${API_BASE_URL}/approvals/${expenseId}/${endpoint}`, {
         method: 'POST',
@@ -387,7 +428,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addBudget,
         updateBudget,
         addAuditLog,
-        updatePolicy
+        updatePolicy,
+        approvedPopups,
+        dismissApprovedPopup
       }}
     >
       {children}

@@ -10,6 +10,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { AuditLogsView } from './components/AuditLogsView';
 import { SettingsView } from './components/SettingsView';
 import { AIChatAssistant } from './components/AIChatAssistant';
+import { ApprovedExpenseModal } from './components/ApprovedExpenseModal';
 
 import { AuthView } from './components/AuthView';
 
@@ -47,7 +48,10 @@ function App() {
   const showChatAssistant = currentTab === 'dashboard' || currentTab === 'analytics';
 
   return (
-    <div className="flex bg-[#090A0F] min-h-screen text-[#F3F4F6] font-sans selection:bg-brand-purple-500 selection:text-white relative">
+    <div className="flex bg-[#030712] min-h-screen text-[#F3F4F6] font-sans selection:bg-[#00A3FF] selection:text-white relative">
+      {/* Targeted Employee Expense Approved Pop-up Modal */}
+      <ApprovedExpenseModal />
+
       {/* Dynamic Confetti Canvas placement holder */}
       <canvas id="confetti-canvas" />
 
