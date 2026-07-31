@@ -199,10 +199,11 @@ export class AuthController {
   // Change password endpoint (usable by user for self, or admin/superadmin for any user)
   @Put('users/:id/password')
   async changePassword(@Param('id') id: string, @Body() body: { password: string }) {
+    const hashedPassword = await bcrypt.hash(body.password, 10);
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
-        password: body.password
+        password: hashedPassword
       }
     });
 

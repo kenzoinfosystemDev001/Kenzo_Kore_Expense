@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, API_BASE_URL } from '../AppContext';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import {
   Sliders,
   Database,
@@ -12,12 +13,14 @@ import {
   Key,
   Info,
   UploadCloud,
+  Lock,
   Image as ImageIcon
 } from 'lucide-react';
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
   const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser } = useApp();
+  const [showSelfPasswordModal, setShowSelfPasswordModal] = useState(false);
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -123,6 +126,41 @@ export const SettingsView: React.FC = () => {
           Configure approval workflows, budgets limits, compliance policies, and employee permissions.
         </p>
       </div>
+
+      {/* Modal for user password change */}
+      <ChangePasswordModal isOpen={showSelfPasswordModal} onClose={() => setShowSelfPasswordModal(false)} />
+
+      {/* Personal Security & Credentials Panel */}
+      {currentUser && (
+        <div className="glass-panel p-6 rounded-3xl border border-[#00C8FF]/25 bg-gradient-to-r from-[#00A3FF]/10 via-[#00C8FF]/5 to-transparent space-y-4 shadow-[0_0_30px_rgba(0,163,255,0.15)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#00A3FF]/15 border border-[#00C8FF]/30 flex items-center justify-center text-[#00E0FF]">
+                <Key className="w-6 h-6" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-extrabold text-white tracking-wide">My Security & Password Settings</h3>
+                  <span className="text-[10px] bg-[#00C8FF]/10 text-[#00C8FF] border border-[#00C8FF]/20 px-2 py-0.5 rounded-full font-bold uppercase">
+                    Self Service
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 font-sans">
+                  Active User: <strong className="text-white">{currentUser.name}</strong> ({currentUser.email})
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowSelfPasswordModal(true)}
+              className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Change My Password</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Seeding Credentials Cheat-sheet */}
       <div className="glass-panel p-5 rounded-3xl border border-brand-orange-500/20 bg-gradient-to-r from-brand-orange-950/20 to-transparent space-y-3">

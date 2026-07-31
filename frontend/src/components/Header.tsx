@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useApp, API_BASE_URL } from '../AppContext';
 import { KenzoLogo } from './KenzoLogo';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import {
   Menu,
   Bell,
   Search,
   LogOut,
-  UploadCloud
+  UploadCloud,
+  Key
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -17,6 +19,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
   const { currentUser, expenses, logout, updateUserAvatar } = useApp();
   const [showBellDropdown, setShowBellDropdown] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const handleHeaderAvatarUpload = async (file: File) => {
     if (!currentUser) return;
@@ -171,10 +174,23 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
           )}
         </div>
 
+        {/* Change Password Modal */}
+        <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
+
+        {/* Change Password Button */}
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="flex items-center gap-1.5 bg-[#00A3FF]/10 border border-[#00C8FF]/20 hover:bg-[#00A3FF]/20 hover:border-[#00C8FF]/40 rounded-xl px-3 py-1.5 text-xs text-[#00C8FF] font-semibold transition-all duration-200 shadow-sm cursor-pointer"
+          title="Change your security password"
+        >
+          <Key className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Change Password</span>
+        </button>
+
         {/* Direct Log Out Button */}
         <button
           onClick={logout}
-          className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/40 rounded-xl px-3.5 py-1.5 text-xs text-rose-400 font-semibold transition-all duration-200 shadow-sm"
+          className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/40 rounded-xl px-3.5 py-1.5 text-xs text-rose-400 font-semibold transition-all duration-200 shadow-sm cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>Log out</span>
