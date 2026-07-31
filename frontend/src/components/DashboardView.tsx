@@ -33,25 +33,27 @@ import {
 export const DashboardView: React.FC = () => {
   const { currentUser, expenses, budgets, setCurrentTab, users, deleteUser } = useApp();
 
+  if (!currentUser) return null;
+
   // Helper variables
   const isEmployee = currentUser?.role === 'Employee';
 
   // Calculations for employee context
-  const empExpenses = expenses.filter(e => e.employeeId === currentUser?.id);
+  const empExpenses = (expenses || []).filter(e => e && e.employeeId === currentUser?.id);
   const pendingReimbursement = empExpenses
-    .filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance' || e.status === 'Approved')
-    .reduce((sum, e) => sum + e.amount, 0);
+    .filter(e => e && (e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance' || e.status === 'Approved'))
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
   const reimbursedTotal = empExpenses
-    .filter(e => e.status === 'Approved' || e.status === 'Reimbursed')
-    .reduce((sum, e) => sum + e.amount, 0);
-  const employeeSpentTotal = empExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const policyViolationsCount = empExpenses.filter(e => e.policyViolations.length > 0).length;
+    .filter(e => e && (e.status === 'Approved' || e.status === 'Reimbursed'))
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
+  const employeeSpentTotal = empExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const policyViolationsCount = empExpenses.filter(e => (e.policyViolations?.length || 0) > 0).length;
 
   // Calculations for Admin / Manager context
-  const allSpend = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const companyPending = expenses.filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
-  const companyReimbursed = expenses.filter(e => e.status === 'Approved' || e.status === 'Reimbursed').reduce((sum, e) => sum + e.amount, 0);
-  const totalEmployeesCount = users.length;
+  const allSpend = (expenses || []).reduce((sum, e) => sum + (e?.amount || 0), 0);
+  const companyPending = (expenses || []).filter(e => e && (e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance')).length;
+  const companyReimbursed = (expenses || []).filter(e => e && (e.status === 'Approved' || e.status === 'Reimbursed')).reduce((sum, e) => sum + (e?.amount || 0), 0);
+  const totalEmployeesCount = (users || []).length;
 
   // Prepare chart data for employee (spend trend)
   const employeeTrendData = [

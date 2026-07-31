@@ -38,9 +38,12 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
     }
   };
 
+  if (!currentUser) return null;
+
   // Derive notifications from recent expenses or actions
-  const pendingApprovalsCount = expenses.filter(e => e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
-  const returnedCount = expenses.filter(e => e.status === 'Returned' && e.employeeId === 'emp_1').length;
+  const safeExpenses = expenses || [];
+  const pendingApprovalsCount = safeExpenses.filter(e => e && (e.status === 'Pending Manager' || e.status === 'Pending Finance')).length;
+  const returnedCount = safeExpenses.filter(e => e && e.status === 'Returned' && e.employeeId === currentUser.id).length;
 
   const notifications = [
     ...(returnedCount > 0

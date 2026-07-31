@@ -219,10 +219,10 @@ export const ExpenseListView: React.FC = () => {
                       ₹{exp.amount.toFixed(2)}
                     </td>
                     <td className="p-4">
-                      {exp.policyViolations.length > 0 ? (
+                      {(exp.policyViolations?.length || 0) > 0 ? (
                         <div className="flex items-center gap-1 text-amber-500 font-sans font-medium text-[10px] bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full w-fit">
                           <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
-                          <span>Violated ({exp.policyViolations.length})</span>
+                          <span>Violated ({(exp.policyViolations?.length || 0)})</span>
                         </div>
                       ) : (
                         <span className="text-gray-500 font-sans text-[10px]">Compliant</span>

@@ -38,7 +38,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     { id: 'settings', name: 'Settings', icon: Settings },
   ];
 
-  const navItems = currentUser.role === 'Employee' ? employeeNavItems : adminNavItems;
+  if (!currentUser) return null;
+
+  const navItems = currentUser?.role === 'Employee' ? employeeNavItems : adminNavItems;
 
   return (
     <aside
