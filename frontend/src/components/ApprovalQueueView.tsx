@@ -73,7 +73,7 @@ export const ApprovalQueueView: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs font-bold text-white bg-white/[0.04] px-2.5 py-1 rounded-lg">
-                    ${exp.amount.toFixed(2)}
+                    ₹{exp.amount.toFixed(2)}
                   </span>
                 </div>
 

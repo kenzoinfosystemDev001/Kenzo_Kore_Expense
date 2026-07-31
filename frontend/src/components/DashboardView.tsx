@@ -113,7 +113,10 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pending Reimbursement</span>
-                  <h3 className="text-2xl font-bold text-white">${pendingReimbursement.toFixed(2)}</h3>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <h3 className="text-2xl font-bold text-white">₹{pendingReimbursement.toFixed(2)}</h3>
+                    <span className="text-[10px] text-gray-500 font-sans font-medium uppercase tracking-widest">In Queue</span>
+                  </div>
                 </div>
                 <div className="p-3 bg-brand-purple-500/10 rounded-xl text-brand-purple-400">
                   <Clock className="w-5 h-5 animate-pulse" />
@@ -130,7 +133,10 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Reimbursed</span>
-                  <h3 className="text-2xl font-bold text-emerald-400">${reimbursedTotal.toFixed(2)}</h3>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <h3 className="text-2xl font-bold text-emerald-400">₹{reimbursedTotal.toFixed(2)}</h3>
+                    <span className="text-[10px] text-gray-500 font-sans font-medium uppercase tracking-widest">Settled</span>
+                  </div>
                 </div>
                 <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
                   <CheckCircle2 className="w-5 h-5" />
@@ -146,7 +152,7 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Spent (FY26)</span>
-                  <h3 className="text-2xl font-bold text-white">${employeeSpentTotal.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold text-white">₹{employeeSpentTotal.toFixed(2)}</h3>
                 </div>
                 <div className="p-3 bg-brand-orange-500/10 rounded-xl text-brand-orange-400">
                   <DollarSign className="w-5 h-5" />
@@ -182,7 +188,7 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Company Total Spend</span>
-                  <h3 className="text-2xl font-bold text-white">${allSpend.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold text-white">₹{allSpend.toFixed(2)}</h3>
                 </div>
                 <div className="p-3 bg-brand-purple-500/10 rounded-xl text-brand-purple-400">
                   <DollarSign className="w-5 h-5" />
@@ -199,9 +205,11 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Awaiting Approvals</span>
-                  <h3 className={`text-2xl font-bold ${companyPending > 0 ? 'text-brand-orange-400' : 'text-white'}`}>
-                    {companyPending}
-                  </h3>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <h3 className={`text-2xl font-bold ${companyPending > 0 ? 'text-brand-orange-400' : 'text-white'}`}>
+                      {companyPending}
+                    </h3>
+                  </div>
                 </div>
                 <div className="p-3 bg-brand-orange-500/10 rounded-xl text-brand-orange-400">
                   <Clock className="w-5 h-5" />
@@ -219,7 +227,10 @@ export const DashboardView: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Reimbursed (Company)</span>
-                  <h3 className="text-2xl font-bold text-emerald-400">${companyReimbursed.toFixed(2)}</h3>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <h3 className="text-2xl font-bold text-emerald-400">₹{companyReimbursed.toFixed(2)}</h3>
+                    <span className="text-[10px] text-gray-500 font-sans font-medium uppercase tracking-widest">Settled</span>
+                  </div>
                 </div>
                 <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
                   <CheckCircle2 className="w-5 h-5" />
@@ -271,13 +282,10 @@ export const DashboardView: React.FC = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                  <XAxis dataKey="date" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#090A0F', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
-                    labelStyle={{ color: '#fff' }}
-                  />
-                  <Area type="monotone" dataKey="amount" name="Spent ($)" stroke="#7C3AED" strokeWidth={2} fillOpacity={1} fill="url(#colorSpent)" />
+                  <XAxis dataKey="date" stroke="#ffffff40" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#ffffff40" fontSize={10} tickLine={false} axisLine={false} tickFormatter={value => `₹${value}`} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area type="monotone" dataKey="amount" name="Spent (₹)" stroke="#7C3AED" strokeWidth={2} fillOpacity={1} fill="url(#colorSpent)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -308,14 +316,25 @@ export const DashboardView: React.FC = () => {
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={4} dataKey="value">
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    labelLine={false}
+                  >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#090A0F', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
-                    formatter={(value: number) => `$${value.toFixed(2)}`}
+                    contentStyle={{ backgroundColor: '#090A0F', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '12px' }}
+                    itemStyle={{ color: '#fff' }}
+                    formatter={(value: number) => `₹${value.toFixed(2)}`}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -325,7 +344,7 @@ export const DashboardView: React.FC = () => {
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-[10px] uppercase font-bold text-gray-500">Total</span>
               <span className="text-lg font-extrabold text-white">
-                ${(isEmployee ? employeeSpentTotal : allSpend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{(isEmployee ? employeeSpentTotal : allSpend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
@@ -336,7 +355,7 @@ export const DashboardView: React.FC = () => {
               <div key={d.name} className="flex items-center gap-1.5 truncate">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                 <span className="text-gray-400 truncate">{d.name}</span>
-                <span className="text-white ml-auto">${d.value.toFixed(0)}</span>
+                <span className="text-white ml-auto">₹{d.value.toFixed(0)}</span>
               </div>
             ))}
           </div>
@@ -376,7 +395,7 @@ export const DashboardView: React.FC = () => {
                   <td className="p-4 text-gray-400 font-sans">{exp.date}</td>
                   <td className="p-4 text-gray-300">{exp.category}</td>
                   {!isEmployee && <td className="p-4 text-gray-300 font-semibold">{exp.employeeName}</td>}
-                  <td className="p-4 font-bold text-white">${exp.amount.toFixed(2)}</td>
+                  <td className="p-4 font-bold text-white">₹{exp.amount.toFixed(2)}</td>
                   <td className="p-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${

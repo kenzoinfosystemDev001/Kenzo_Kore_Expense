@@ -203,8 +203,8 @@ export const ExpenseListView: React.FC = () => {
                   <tr key={exp.id} className="hover:bg-white/[0.02] transition-colors duration-150">
                     <td className="p-4">
                       <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm">{exp.merchant}</span>
-                        <span className="text-[10px] text-gray-500 font-sans tracking-wide mt-0.5">{exp.id}</span>
+                        <div className="font-semibold text-white">{exp.title}</div>
+                        <div className="text-[10px] text-gray-500 font-sans mt-0.5 max-w-[200px] truncate">{exp.merchant}</div>
                       </div>
                     </td>
                     <td className="p-4 text-gray-300 font-sans">{exp.date}</td>
@@ -214,8 +214,8 @@ export const ExpenseListView: React.FC = () => {
                         {exp.employeeName}
                       </td>
                     )}
-                    <td className="p-4 font-bold text-white text-sm">
-                      ${exp.amount.toFixed(2)}
+                    <td className="p-4 text-right font-bold text-white">
+                      ₹{exp.amount.toFixed(2)}
                     </td>
                     <td className="p-4">
                       {exp.policyViolations.length > 0 ? (
@@ -320,12 +320,24 @@ export const ExpenseListView: React.FC = () => {
                       <span className="font-semibold text-white">{activeExpense.location}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-gray-500">Type</span>
+                      <span className="font-semibold text-white">{activeExpense.category}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Topic</span>
+                      <span className="font-semibold text-white max-w-[200px] truncate text-right">{activeExpense.title}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Description of Expense</span>
+                      <span className="font-semibold text-white max-w-[200px] text-right break-words">{activeExpense.businessPurpose}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-gray-500">Payment Mode</span>
                       <span className="font-semibold text-white">{activeExpense.paymentMethod}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Tax Amount</span>
-                      <span className="font-semibold text-white">${activeExpense.taxAmount.toFixed(2)}</span>
+                      <span className="font-semibold text-white">₹{activeExpense.taxAmount.toFixed(2)}</span>
                     </div>
                     {activeExpense.gstNumber && (
                       <div className="flex justify-between">
@@ -335,7 +347,7 @@ export const ExpenseListView: React.FC = () => {
                     )}
                     <div className="flex justify-between border-t border-white/[0.04] pt-2 mt-2 text-sm">
                       <span className="text-gray-400 font-medium">Claim Amount</span>
-                      <span className="font-extrabold text-white">${activeExpense.amount.toFixed(2)}</span>
+                      <span className="font-extrabold text-white">₹{activeExpense.amount.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -382,7 +394,7 @@ export const ExpenseListView: React.FC = () => {
                   <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Receipt / Bill Attachment</h4>
                   {activeExpense.receiptUrl ? (
                     <div>
-                      {activeExpense.receiptUrl.startsWith('blob:') ? (
+                      {activeExpense.receiptUrl.startsWith('blob:') || activeExpense.receiptUrl.startsWith('http') || activeExpense.receiptUrl.startsWith('data:') ? (
                         /* Render direct live files uploads (blob URLs) */
                         activeExpense.receiptUrl.includes('application/pdf') || activeExpense.title.toLowerCase().includes('pdf') || activeExpense.businessPurpose.toLowerCase().includes('pdf') ? (
                           <iframe
@@ -395,6 +407,9 @@ export const ExpenseListView: React.FC = () => {
                             src={activeExpense.receiptUrl}
                             className="w-full h-64 object-contain rounded-2xl border border-white/[0.08] bg-black/25"
                             alt="Receipt Preview Image"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=400&q=80';
+                            }}
                           />
                         )
                       ) : (
