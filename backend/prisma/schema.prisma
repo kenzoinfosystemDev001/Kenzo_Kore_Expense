@@ -130,6 +130,8 @@ model Expense {
   reimbursements   Reimbursement[]
   tags             ExpenseTag[]
 
+  @@index([employeeId, status, createdAt])
+  @@index([status])
   @@map("expenses")
 }
 

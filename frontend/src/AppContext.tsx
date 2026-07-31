@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Expense, Budget, Policy, AuditLog, ExpenseStatus, ExpenseCategory, PaymentMethod, ExpenseItem, ApprovedPopup } from './types';
 import { mockBudgets, mockPolicies, mockAuditLogs } from './mockData';
+import { api } from './api/axiosInstance';
 
 interface AppContextProps {
   currentUser: User | null;
   isAuthenticated: boolean;
+  authLoading: boolean;
   users: User[];
   expenses: Expense[];
   budgets: Budget[];
@@ -64,6 +66,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:30
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [userList, setUserList] = useState<User[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>(mockBudgets);
@@ -137,7 +140,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   useEffect(() => {
-    refreshData();
+    const initAuth = async () => {
+      const token = localStorage.getItem('kenzo_kore_jwt');
+      if (token) {
+        try {
+          const res = await api.get('/auth/me');
+          if (res.data) {
+            setCurrentUser(res.data);
+            setIsAuthenticated(true);
+          }
+        } catch (err) {
+          console.warn('Session token verification failed:', err);
+          localStorage.removeItem('kenzo_kore_jwt');
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+      setAuthLoading(false);
+      await refreshData();
+    };
+    initAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -407,6 +429,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       value={{
         currentUser,
         isAuthenticated,
+        authLoading,
         users: userList,
         expenses,
         budgets,

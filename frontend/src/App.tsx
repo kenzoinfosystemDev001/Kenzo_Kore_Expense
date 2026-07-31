@@ -11,14 +11,25 @@ import { AuditLogsView } from './components/AuditLogsView';
 import { SettingsView } from './components/SettingsView';
 import { AIChatAssistant } from './components/AIChatAssistant';
 import { ApprovedExpenseModal } from './components/ApprovedExpenseModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { AuthView } from './components/AuthView';
 
 function App() {
-  const { currentTab, isAuthenticated } = useApp();
+  const { currentTab, isAuthenticated, authLoading } = useApp();
   const [collapsed, setCollapsed] = useState(true);
 
-  // If not logged in, force render the login screen
+  // Loading state during token validation on mount
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center space-y-4 text-white font-sans">
+        <div className="w-12 h-12 rounded-full border-2 border-[#00A3FF] border-t-transparent animate-spin" />
+        <span className="text-xs text-[#00C8FF] font-semibold tracking-widest uppercase">Validating Enterprise Session...</span>
+      </div>
+    );
+  }
+
+  // If not logged in, render authentication view
   if (!isAuthenticated) {
     return <AuthView />;
   }

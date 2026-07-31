@@ -20,6 +20,18 @@ export class ReceiptsController {
       throw new BadRequestException('No file provided for upload');
     }
 
+    // Security Check: File Size Limit (10MB)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      throw new BadRequestException('File size exceeds maximum enterprise limit of 10MB');
+    }
+
+    // Security Check: Allowed MIME Types (PDF & Images)
+    const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Invalid file format. Only PDF, PNG, JPG, JPEG, and WEBP documents are allowed');
+    }
+
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
