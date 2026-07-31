@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp, API_BASE_URL } from '../AppContext';
 import {
   Sliders,
   Database,
@@ -11,7 +11,8 @@ import {
   Shield,
   Key,
   Info,
-  Camera
+  UploadCloud,
+  Image as ImageIcon
 } from 'lucide-react';
 import { UserRole } from '../types';
 
@@ -27,6 +28,48 @@ export const SettingsView: React.FC = () => {
   const [designation, setDesignation] = useState('');
   const [departmentId, setDepartmentId] = useState('dept_eng');
   const [avatar, setAvatar] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleDeviceAvatarUpload = async (userId: string, file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.fileUrl) {
+          await updateUserAvatar(userId, data.fileUrl);
+        }
+      }
+    } catch (err) {
+      console.error('Avatar device upload error:', err);
+    }
+  };
+
+  const handleFormAvatarUpload = async (file: File) => {
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.fileUrl) {
+          setAvatar(data.fileUrl);
+        }
+      }
+    } catch (err) {
+      console.error('Form avatar upload error:', err);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleTogglePolicy = (id: string, currentLimit: number, enabled: boolean) => {
     updatePolicy(id, currentLimit, !enabled);
@@ -261,14 +304,27 @@ export const SettingsView: React.FC = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-gray-400">Profile Pic / Avatar URL (Optional)</label>
-              <input
-                type="text"
-                placeholder="https://images.unsplash.com/..."
-                value={avatar}
-                onChange={e => setAvatar(e.target.value)}
-                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
-              />
+              <label className="text-gray-400">Profile Picture (Upload from Device)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  id="form-avatar-file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => e.target.files?.[0] && handleFormAvatarUpload(e.target.files[0])}
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('form-avatar-file')?.click()}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white rounded-xl text-xs font-semibold transition"
+                >
+                  <UploadCloud className="w-4 h-4 text-brand-purple-400" />
+                  <span>{uploadingAvatar ? 'Uploading...' : 'Choose Device Photo'}</span>
+                </button>
+                {avatar && (
+                  <img src={avatar} alt="Preview" className="w-8 h-8 rounded-full object-cover border border-white/20" />
+                )}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-gray-400">System Role</label>
@@ -328,17 +384,19 @@ export const SettingsView: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-4 text-center flex items-center justify-center gap-2">
+                    <input
+                      type="file"
+                      id={`avatar-upload-${u.id}`}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => e.target.files?.[0] && handleDeviceAvatarUpload(u.id, e.target.files[0])}
+                    />
                     <button
-                      onClick={() => {
-                        const newAvatar = window.prompt(`Enter new Profile Picture / Avatar URL for ${u.name}:`, u.avatar);
-                        if (newAvatar && newAvatar.trim()) {
-                          updateUserAvatar(u.id, newAvatar.trim());
-                        }
-                      }}
+                      onClick={() => document.getElementById(`avatar-upload-${u.id}`)?.click()}
                       className="p-2 rounded-xl bg-white/[0.03] hover:bg-brand-purple-500/10 text-gray-400 hover:text-brand-purple-300 border border-white/[0.04] transition-colors"
-                      title="Change avatar picture"
+                      title="Upload profile picture from device/system"
                     >
-                      <Camera className="w-4 h-4" />
+                      <UploadCloud className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteUser(u.id, u.name)}

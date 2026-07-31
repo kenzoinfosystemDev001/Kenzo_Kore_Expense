@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useApp } from '../AppContext';
+import { useApp, API_BASE_URL } from '../AppContext';
 import {
   Menu,
   Bell,
   Search,
-  LogOut
+  LogOut,
+  UploadCloud
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -13,8 +14,28 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
-  const { currentUser, expenses, logout } = useApp();
+  const { currentUser, expenses, logout, updateUserAvatar } = useApp();
   const [showBellDropdown, setShowBellDropdown] = useState(false);
+
+  const handleHeaderAvatarUpload = async (file: File) => {
+    if (!currentUser) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.fileUrl) {
+          await updateUserAvatar(currentUser.id, data.fileUrl);
+        }
+      }
+    } catch (err) {
+      console.error('Header avatar upload error:', err);
+    }
+  };
 
   // Derive notifications from recent expenses or actions
   const pendingApprovalsCount = expenses.filter(e => e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
@@ -73,10 +94,27 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
 
       {/* Right section: Profile info & Logout */}
       <div className="flex items-center gap-3">
-        {/* Active User Badge */}
+        {/* Active User Badge with Device Photo Upload */}
         {currentUser && (
           <div className="hidden lg:flex items-center gap-2.5 px-3 py-1.5 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-            <img src={currentUser.avatar} alt={currentUser.name} className="w-6 h-6 rounded-full object-cover" />
+            <input
+              type="file"
+              id="header-user-avatar-input"
+              accept="image/*"
+              className="hidden"
+              onChange={e => e.target.files?.[0] && handleHeaderAvatarUpload(e.target.files[0])}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('header-user-avatar-input')?.click()}
+              className="relative group cursor-pointer"
+              title="Click to upload profile photo from device"
+            >
+              <img src={currentUser.avatar} alt={currentUser.name} className="w-6 h-6 rounded-full object-cover border border-white/10 group-hover:opacity-75 transition-opacity" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <UploadCloud className="w-3 h-3 text-white" />
+              </div>
+            </button>
             <div className="flex flex-col text-left">
               <span className="text-xs font-bold text-white leading-tight">{currentUser.name}</span>
               <span className="text-[9px] text-gray-400">{currentUser.role}</span>
