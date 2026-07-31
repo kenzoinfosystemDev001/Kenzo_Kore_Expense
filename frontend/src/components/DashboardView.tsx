@@ -66,23 +66,25 @@ export const DashboardView: React.FC = () => {
 
   // Prepare category distribution chart data
   const categoryMap: { [key: string]: number } = {};
-  const relevantExpenses = isEmployee ? empExpenses : expenses;
-  relevantExpenses.forEach(e => {
-    categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
+  const relevantExpenses = isEmployee ? empExpenses : (expenses || []);
+  (relevantExpenses || []).forEach(e => {
+    if (e && e.category) {
+      categoryMap[e.category] = (categoryMap[e.category] || 0) + (e.amount || 0);
+    }
   });
 
   const pieData = Object.keys(categoryMap).map(key => ({
     name: key,
-    value: categoryMap[key]
+    value: categoryMap[key] || 0
   }));
 
   const COLORS = ['#00A3FF', '#00C8FF', '#10B981', '#3B82F6', '#00E0FF', '#38BDF8'];
 
   // Prepare budget progress data for Admin
-  const budgetProgressData = budgets.map(b => ({
-    name: b.name.split(' ')[2] || b.name,
-    Allocated: b.allocated,
-    Spent: b.spent
+  const budgetProgressData = (budgets || []).map(b => ({
+    name: b && b.name ? (b.name.split(' ')[2] || b.name) : 'Budget',
+    Allocated: b ? (b.allocated || 0) : 0,
+    Spent: b ? (b.spent || 0) : 0
   }));
 
   return (
@@ -397,13 +399,13 @@ export const DashboardView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {relevantExpenses.slice(0, 4).map(exp => (
+              {(relevantExpenses || []).slice(0, 4).map(exp => (
                 <tr key={exp.id} className="hover:bg-white/[0.02] transition-colors duration-150">
-                  <td className="p-4 font-bold text-white">{exp.merchant}</td>
+                  <td className="p-4 font-bold text-white">{exp.merchant || 'Merchant'}</td>
                   <td className="p-4 text-gray-400 font-sans">{exp.date}</td>
                   <td className="p-4 text-gray-300">{exp.category}</td>
                   {!isEmployee && <td className="p-4 text-gray-300 font-semibold">{exp.employeeName}</td>}
-                  <td className="p-4 font-bold text-white">₹{exp.amount.toFixed(2)}</td>
+                  <td className="p-4 font-bold text-white">₹{(exp.amount || 0).toFixed(2)}</td>
                   <td className="p-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
