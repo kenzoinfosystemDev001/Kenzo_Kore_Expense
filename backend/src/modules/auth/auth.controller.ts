@@ -85,6 +85,7 @@ export class AuthController {
     role: string;
     designation: string;
     departmentId: string;
+    avatar?: string;
   }) {
     const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80';
     
@@ -98,16 +99,16 @@ export class AuthController {
         designation: body.designation,
         departmentId: body.departmentId || 'dept_eng',
         costCenterId: 'cc_dev',
-        avatar: defaultAvatar
+        avatar: body.avatar && body.avatar.trim() ? body.avatar.trim() : defaultAvatar
       }
     });
 
-    // Register register security audit log
+    // Register security audit log
     await this.prisma.auditLog.create({
       data: {
         userId: newUser.id,
         action: 'USER_REGISTER_BCRYPT_HASHED',
-        details: `Created new secure database profile. Hashed password key: $2b$10$KenzoKoreSecretSaltHashedKey`,
+        details: `Created new secure database profile for ${newUser.name}.`,
         ipAddress: '127.0.0.1'
       }
     });
@@ -135,16 +136,17 @@ export class AuthController {
     };
   }
 
-  // Update employee profile & password in Neon PostgreSQL
+  // Update employee profile, avatar & password in Neon PostgreSQL
   @Put('users/:id')
-  async updateUser(@Param('id') id: string, @Body() body: { name?: string; email?: string; designation?: string; password?: string }) {
+  async updateUser(@Param('id') id: string, @Body() body: { name?: string; email?: string; designation?: string; password?: string; avatar?: string }) {
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
         name: body.name,
         email: body.email ? body.email.toLowerCase() : undefined,
         designation: body.designation,
-        password: body.password ? body.password : undefined
+        password: body.password ? body.password : undefined,
+        avatar: body.avatar ? body.avatar : undefined
       }
     });
 

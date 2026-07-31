@@ -110,7 +110,7 @@ export const AnalyticsView: React.FC = () => {
               Optimization Suggestion
             </span>
             <p className="text-gray-400 font-sans">
-              Switching recurring flight tickets to Air India corporate vouchers will yield approximately <strong>$1,200 in annual rebates</strong> based on travel histories.
+              Switching recurring flight tickets to Air India corporate vouchers will yield approximately <strong>₹1,200 in annual rebates</strong> based on travel histories.
             </p>
           </div>
         </div>

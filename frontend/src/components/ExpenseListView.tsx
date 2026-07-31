@@ -255,7 +255,7 @@ export const ExpenseListView: React.FC = () => {
                         {(exp.status === 'Draft' || !isEmployee) && (
                           <button
                             onClick={() => {
-                              if (window.confirm(`Are you sure you want to delete this expense claim from ${exp.employeeName} for $${exp.amount}?`)) {
+                              if (window.confirm(`Are you sure you want to delete this expense claim from ${exp.employeeName} for ₹${exp.amount}?`)) {
                                 deleteExpense(exp.id);
                               }
                             }}

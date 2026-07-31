@@ -21,10 +21,12 @@ interface AppContextProps {
     role: 'Employee' | 'Admin';
     designation: string;
     departmentId: string;
+    avatar?: string;
   }) => Promise<void>;
   logout: () => void;
   deleteUser: (userId: string) => Promise<void>;
   updateUserPassword: (userId: string, newPassword: string) => Promise<boolean>;
+  updateUserAvatar: (userId: string, avatarUrl: string) => Promise<boolean>;
   createExpense: (expenseData: {
     title: string;
     category: ExpenseCategory;
@@ -176,6 +178,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     role: 'Employee' | 'Admin';
     designation: string;
     departmentId: string;
+    avatar?: string;
   }) => {
     try {
       await fetch(`${API_BASE_URL}/auth/register`, {
@@ -214,6 +217,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err) {
       console.error('Update password error: ', err);
+    }
+    return false;
+  };
+
+  const updateUserAvatar = async (userId: string, avatarUrl: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: avatarUrl })
+      });
+      if (res.ok) {
+        addAuditLog('USER_AVATAR_UPDATED', `Updated profile picture for user ID ${userId} in Neon DB`);
+        if (currentUser?.id === userId) {
+          setCurrentUser(prev => prev ? { ...prev, avatar: avatarUrl } : null);
+        }
+        await refreshData();
+        return true;
+      }
+    } catch (err) {
+      console.error('Update avatar error: ', err);
     }
     return false;
   };
@@ -355,6 +379,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logout,
         deleteUser,
         updateUserPassword,
+        updateUserAvatar,
         createExpense,
         updateExpenseStatus,
         updateExpense,

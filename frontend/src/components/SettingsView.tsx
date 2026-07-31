@@ -10,12 +10,13 @@ import {
   Mail,
   Shield,
   Key,
-  Info
+  Info,
+  Camera
 } from 'lucide-react';
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const { policies, budgets, updatePolicy, users, signup, deleteUser, currentUser } = useApp();
+  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser } = useApp();
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -25,6 +26,7 @@ export const SettingsView: React.FC = () => {
   const [role, setRole] = useState<'Employee' | 'Admin'>('Employee');
   const [designation, setDesignation] = useState('');
   const [departmentId, setDepartmentId] = useState('dept_eng');
+  const [avatar, setAvatar] = useState('');
 
   const handleTogglePolicy = (id: string, currentLimit: number, enabled: boolean) => {
     updatePolicy(id, currentLimit, !enabled);
@@ -47,11 +49,13 @@ export const SettingsView: React.FC = () => {
       role,
       designation,
       departmentId,
+      avatar: avatar && avatar.trim() ? avatar.trim() : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'
     });
     // Clear inputs
     setName('');
     setEmail('');
     setDesignation('');
+    setAvatar('');
     setShowAddForm(false);
     alert(`Employee ${name} added successfully! Credentials registered in PostgreSQL database via Prisma.`);
   };
@@ -257,6 +261,16 @@ export const SettingsView: React.FC = () => {
               />
             </div>
             <div className="space-y-1.5">
+              <label className="text-gray-400">Profile Pic / Avatar URL (Optional)</label>
+              <input
+                type="text"
+                placeholder="https://images.unsplash.com/..."
+                value={avatar}
+                onChange={e => setAvatar(e.target.value)}
+                className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white"
+              />
+            </div>
+            <div className="space-y-1.5">
               <label className="text-gray-400">System Role</label>
               <select
                 value={role}
@@ -295,7 +309,7 @@ export const SettingsView: React.FC = () => {
                 <tr key={u.id} className="hover:bg-white/[0.01] transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
+                      <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover border border-white/10" />
                       <div className="flex flex-col">
                         <span className="font-bold text-white text-sm">{u.name}</span>
                         <span className="text-[10px] text-gray-500 font-sans mt-0.5">{u.designation}</span>
@@ -313,7 +327,19 @@ export const SettingsView: React.FC = () => {
                       {u.role}
                     </span>
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="p-4 text-center flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => {
+                        const newAvatar = window.prompt(`Enter new Profile Picture / Avatar URL for ${u.name}:`, u.avatar);
+                        if (newAvatar && newAvatar.trim()) {
+                          updateUserAvatar(u.id, newAvatar.trim());
+                        }
+                      }}
+                      className="p-2 rounded-xl bg-white/[0.03] hover:bg-brand-purple-500/10 text-gray-400 hover:text-brand-purple-300 border border-white/[0.04] transition-colors"
+                      title="Change avatar picture"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => handleDeleteUser(u.id, u.name)}
                       className="p-2 rounded-xl bg-white/[0.03] hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 border border-white/[0.04] transition-colors"

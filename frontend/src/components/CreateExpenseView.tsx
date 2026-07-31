@@ -167,23 +167,24 @@ export const CreateExpenseView: React.FC = () => {
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            // Apply parse configurations
+            // Only set fields if currently empty (preserve user inputs!)
             const titleText = `Claim: ${file.name.split('.')[0].replace(/[-_]/g, ' ')}`;
-            setTitle(titleText);
+            setTitle(prev => prev ? prev : titleText);
             
-            // Random realistic parsing values
             const parsedAmount = Math.floor(35 + Math.random() * 250) + 0.90;
             const parsedTax = parseFloat((parsedAmount * 0.18).toFixed(2));
-            setAmount(parsedAmount);
-            setTaxAmount(parsedTax);
             
-            setMerchant("Parsed Invoice Corp");
-            setCategory("Office Supplies");
-            setBusinessPurpose(`Expense claim verified from scanned file: ${file.name}`);
-            setReferenceNumber(`FILE-${Math.floor(100000 + Math.random() * 900000)}`);
-            setLineItems([
-              { id: '1', description: `Itemized parsed from ${file.name}`, amount: parsedAmount, taxAmount: parsedTax }
-            ]);
+            setAmount(prev => (prev && prev > 0) ? prev : parsedAmount);
+            setTaxAmount(prev => (prev && prev > 0) ? prev : parsedTax);
+            
+            setMerchant(prev => prev ? prev : "Parsed Invoice Corp");
+            setBusinessPurpose(prev => prev ? prev : `Expense claim verified from scanned file: ${file.name}`);
+            setReferenceNumber(prev => prev ? prev : `FILE-${Math.floor(100000 + Math.random() * 900000)}`);
+            
+            setLineItems(prev => {
+              if (prev.length > 0 && prev[0].description) return prev;
+              return [{ id: '1', description: `Itemized parsed from ${file.name}`, amount: amount || parsedAmount, taxAmount: taxAmount || parsedTax }];
+            });
             setIsScanning(false);
             
             confetti({
@@ -561,7 +562,7 @@ export const CreateExpenseView: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-[10px] text-brand-orange-400 font-bold font-sans">
-                  ${preset.amount}
+                  ₹{preset.amount}
                 </span>
               </button>
             ))}
