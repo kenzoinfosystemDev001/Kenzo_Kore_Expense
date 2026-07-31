@@ -322,7 +322,7 @@ export const SettingsView: React.FC = () => {
                   <span>{uploadingAvatar ? 'Uploading...' : 'Choose Device Photo'}</span>
                 </button>
                 {avatar && (
-                  <img src={avatar} alt="Preview" className="w-8 h-8 rounded-full object-cover border border-white/20" />
+                  <img src={avatar} alt="Preview" className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0" style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', maxWidth: '32px', maxHeight: '32px' }} />
                 )}
               </div>
             </div>
@@ -340,7 +340,7 @@ export const SettingsView: React.FC = () => {
             <div className="space-y-1.5 flex items-end">
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-brand-purple-600 hover:bg-brand-purple-700 text-white font-bold transition"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#0077B6] to-[#00A3FF] hover:from-[#0088FF] hover:to-[#00C8FF] text-white font-bold transition shadow-[0_0_15px_rgba(0,163,255,0.3)]"
               >
                 Confirm Add User
               </button>
@@ -365,7 +365,7 @@ export const SettingsView: React.FC = () => {
                 <tr key={u.id} className="hover:bg-white/[0.01] transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                      <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0" style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', maxWidth: '32px', maxHeight: '32px' }} />
                       <div className="flex flex-col">
                         <span className="font-bold text-white text-sm">{u.name}</span>
                         <span className="text-[10px] text-gray-500 font-sans mt-0.5">{u.designation}</span>

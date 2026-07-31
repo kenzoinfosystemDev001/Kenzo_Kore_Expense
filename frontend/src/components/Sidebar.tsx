@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../AppContext';
+import { KenzoLogo } from './KenzoLogo';
 import {
   LayoutDashboard,
   Receipt,
@@ -48,16 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     >
       {/* Brand Logo */}
       <div className="p-5 flex items-center gap-3 border-b border-[#00C8FF]/15 overflow-hidden">
-        <svg className="w-9 h-9 text-[#00A3FF] shrink-0 filter drop-shadow-[0_0_10px_rgba(0,163,255,0.6)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M25 65C35 65 42 58 50 50C58 42 65 35 75 35C85 35 92 42 92 50C92 58 85 65 75 65C65 65 58 58 50 50C42 42 35 35 25 35C15 35 8 42 8 50C8 58 15 65 25 65Z" stroke="url(#sidebar-cyan-grad)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
-          <defs>
-            <linearGradient id="sidebar-cyan-grad" x1="0" y1="0" x2="100" y2="100">
-              <stop offset="0%" stopColor="#00A3FF" />
-              <stop offset="50%" stopColor="#00C8FF" />
-              <stop offset="100%" stopColor="#00E0FF" />
-            </linearGradient>
-          </defs>
-        </svg>
+        <KenzoLogo size={36} className="w-9 h-9" />
         {!collapsed && (
           <div className="flex flex-col">
             <span className="font-extrabold text-white font-sans tracking-widest leading-none text-base">
@@ -102,12 +94,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
       </nav>
 
       {/* User Quick Info */}
-      <div className="p-4 border-t border-[#00C8FF]/10 overflow-hidden">
+      <div className="p-4 border-t border-[#00C8FF]/10 overflow-hidden shrink-0">
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
           <img
             src={currentUser.avatar}
             alt={currentUser.name}
-            className="w-8 h-8 rounded-full object-cover border border-[#00C8FF]/30"
+            className="w-8 h-8 rounded-full object-cover border border-[#00C8FF]/30 shrink-0"
+            style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', maxWidth: '32px', maxHeight: '32px' }}
           />
           {!collapsed && (
             <div className="flex flex-col text-left min-w-0">

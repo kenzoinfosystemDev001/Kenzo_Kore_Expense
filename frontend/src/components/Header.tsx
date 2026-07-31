@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, API_BASE_URL } from '../AppContext';
+import { KenzoLogo } from './KenzoLogo';
 import {
   Menu,
   Bell,
@@ -46,17 +47,17 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
       ? [
           {
             id: 'n1',
-            title: 'Expense Returned',
-            text: 'Your expense JW Marriott Dining Room was returned by Vikram Aditya.',
+            title: 'Claim Returned for Review',
+            text: `You have ${returnedCount} expense claim returned for corrections.`,
             type: 'warning'
           }
         ]
       : []),
-    ...(pendingApprovalsCount > 0
+    ...(currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin'
       ? [
           {
             id: 'n2',
-            title: 'Pending Action items',
+            title: 'Approval Queue Alert',
             text: `You have ${pendingApprovalsCount} expenses awaiting review in approval queue.`,
             type: 'info'
           }
@@ -107,10 +108,15 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
             <button
               type="button"
               onClick={() => document.getElementById('header-user-avatar-input')?.click()}
-              className="relative group cursor-pointer"
+              className="relative group cursor-pointer shrink-0"
               title="Click to upload profile photo from device"
             >
-              <img src={currentUser.avatar} alt={currentUser.name} className="w-6.5 h-6.5 rounded-full object-cover border border-[#00C8FF]/30 group-hover:opacity-75 transition-opacity" />
+              <img
+                src={currentUser.avatar}
+                alt={currentUser.name}
+                className="w-7 h-7 rounded-full object-cover border border-[#00C8FF]/30 group-hover:opacity-75 transition-opacity shrink-0"
+                style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', maxWidth: '28px', maxHeight: '28px' }}
+              />
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                 <UploadCloud className="w-3 h-3 text-white" />
               </div>

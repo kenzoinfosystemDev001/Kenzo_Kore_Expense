@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../AppContext';
+import { KenzoLogo } from './KenzoLogo';
 import { ShieldCheck, Mail, Lock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -48,22 +49,14 @@ export const AuthView: React.FC = () => {
       <div className="w-full max-w-md glass-panel rounded-3xl p-8 border border-[#00C8FF]/20 shadow-[0_0_50px_rgba(0,163,255,0.15)] space-y-8 relative z-10">
         {/* Kenzo Infosystems Brand Header */}
         <div className="flex flex-col items-center text-center space-y-3">
-          {/* Official Kenzo Infinity Ribbon Logo */}
-          <div className="flex items-center gap-2.5">
-            <svg className="w-10 h-10 text-[#00A3FF] filter drop-shadow-[0_0_12px_rgba(0,163,255,0.6)] animate-pulse" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M25 65C35 65 42 58 50 50C58 42 65 35 75 35C85 35 92 42 92 50C92 58 85 65 75 65C65 65 58 58 50 50C42 42 35 35 25 35C15 35 8 42 8 50C8 58 15 65 25 65Z" stroke="url(#cyan-grad)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
-              <defs>
-                <linearGradient id="cyan-grad" x1="0" y1="0" x2="100" y2="100">
-                  <stop offset="0%" stopColor="#00A3FF" />
-                  <stop offset="50%" stopColor="#00C8FF" />
-                  <stop offset="100%" stopColor="#00E0FF" />
-                </linearGradient>
-              </defs>
-            </svg>
+          {/* Official Kenzo Infinity Ribbon Logo (Image 3) */}
+          <div className="flex items-center gap-3">
+            <KenzoLogo size={44} className="w-11 h-11" />
             <div className="flex flex-col text-left">
-              <span className="text-xl font-extrabold text-white tracking-widest font-sans flex items-center gap-1">
-                KENZO <span className="text-[#00C8FF] text-xs font-semibold tracking-widest block -mt-1">INFOSYSTEMS</span>
+              <span className="text-xl font-extrabold text-white tracking-widest font-sans flex items-center gap-1 leading-none">
+                KENZO
               </span>
+              <span className="text-[10px] text-[#00C8FF] font-semibold tracking-widest block uppercase mt-0.5">INFOSYSTEMS</span>
             </div>
           </div>
           <div>
