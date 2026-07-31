@@ -40,15 +40,15 @@ export const DashboardView: React.FC = () => {
     .filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance' || e.status === 'Approved')
     .reduce((sum, e) => sum + e.amount, 0);
   const reimbursedTotal = empExpenses
-    .filter(e => e.status === 'Reimbursed')
+    .filter(e => e.status === 'Approved' || e.status === 'Reimbursed')
     .reduce((sum, e) => sum + e.amount, 0);
   const employeeSpentTotal = empExpenses.reduce((sum, e) => sum + e.amount, 0);
   const policyViolationsCount = empExpenses.filter(e => e.policyViolations.length > 0).length;
 
   // Calculations for Admin / Manager context
   const allSpend = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const companyPending = expenses.filter(e => e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
-  const companyReimbursed = expenses.filter(e => e.status === 'Reimbursed').reduce((sum, e) => sum + e.amount, 0);
+  const companyPending = expenses.filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
+  const companyReimbursed = expenses.filter(e => e.status === 'Approved' || e.status === 'Reimbursed').reduce((sum, e) => sum + e.amount, 0);
   const totalEmployeesCount = users.length;
 
   // Prepare chart data for employee (spend trend)

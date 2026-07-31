@@ -9,6 +9,7 @@ export class ExpensesController {
   async getExpenses() {
     return this.prisma.expense.findMany({
       include: {
+        employee: true,
         items: true,
         approvals: true
       },

@@ -13,7 +13,8 @@ import {
   ArrowRight,
   TrendingDown,
   HelpCircle,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -394,24 +395,33 @@ export const ExpenseListView: React.FC = () => {
                   <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Receipt / Bill Attachment</h4>
                   {activeExpense.receiptUrl ? (
                     <div>
-                      {activeExpense.receiptUrl.startsWith('blob:') || activeExpense.receiptUrl.startsWith('http') || activeExpense.receiptUrl.startsWith('data:') ? (
-                        /* Render direct live files uploads (blob URLs) */
-                        activeExpense.receiptUrl.includes('application/pdf') || activeExpense.title.toLowerCase().includes('pdf') || activeExpense.businessPurpose.toLowerCase().includes('pdf') ? (
-                          <iframe
-                            src={activeExpense.receiptUrl}
-                            className="w-full h-64 rounded-2xl border border-white/[0.08] bg-white/[0.02]"
-                            title="Receipt Preview PDF"
-                          />
-                        ) : (
-                          <img
-                            src={activeExpense.receiptUrl}
-                            className="w-full h-64 object-contain rounded-2xl border border-white/[0.08] bg-black/25"
-                            alt="Receipt Preview Image"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=400&q=80';
-                            }}
-                          />
-                        )
+                      {activeExpense.receiptUrl.toLowerCase().includes('.pdf') || activeExpense.receiptUrl.includes('application/pdf') || activeExpense.title.toLowerCase().includes('pdf') || activeExpense.businessPurpose.toLowerCase().includes('pdf') ? (
+                        /* Render PDF viewer & open document link */
+                        <div className="border border-white/[0.08] rounded-2xl p-6 bg-white/[0.02] flex flex-col items-center justify-center h-64 text-center space-y-3">
+                          <div className="w-14 h-14 rounded-2xl bg-brand-purple-500/10 border border-brand-purple-500/20 flex items-center justify-center">
+                            <FileText className="w-7 h-7 text-brand-purple-400" />
+                          </div>
+                          <div>
+                            <span className="text-white font-bold text-xs block">PDF Bill Document</span>
+                            <span className="text-gray-400 text-[10px] font-sans mt-0.5 block">Official PDF receipt uploaded by employee</span>
+                          </div>
+                          <a
+                            href={activeExpense.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-bold text-xs rounded-xl transition shadow-lg flex items-center gap-1.5"
+                          >
+                            <span>Open & View PDF Receipt</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      ) : activeExpense.receiptUrl.startsWith('blob:') || activeExpense.receiptUrl.startsWith('http') || activeExpense.receiptUrl.startsWith('data:') ? (
+                        /* Render direct live image uploads */
+                        <img
+                          src={activeExpense.receiptUrl}
+                          className="w-full h-64 object-contain rounded-2xl border border-white/[0.08] bg-black/25"
+                          alt="Receipt Preview Image"
+                        />
                       ) : (
                         /* Render default presets */
                         <div className="border border-white/[0.06] rounded-2xl overflow-hidden bg-black/40 h-64 flex flex-col items-center justify-center p-6 text-center text-xs">

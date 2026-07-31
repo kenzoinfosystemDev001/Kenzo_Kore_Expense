@@ -98,7 +98,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             id: e.id,
             title: e.title,
             employeeId: e.employeeId,
-            employeeName: e.employeeName || 'Sujal Kumar',
+            employeeName: e.employee ? e.employee.name : (e.employeeName || 'Corporate Staff'),
             departmentId: e.departmentId,
             costCenterId: e.costCenterId,
             category: e.category,
