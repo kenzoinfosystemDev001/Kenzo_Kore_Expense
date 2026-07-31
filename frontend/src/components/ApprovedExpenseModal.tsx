@@ -22,12 +22,12 @@ export const ApprovedExpenseModal: React.FC = () => {
   if (!userPopup) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
       {/* Glow background behind modal */}
       <div className="absolute w-[450px] h-[450px] bg-[#00A3FF]/15 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Modal Container */}
-      <div className="w-full max-w-lg glass-panel rounded-3xl p-6 sm:p-8 border border-[#00C8FF]/30 shadow-[0_0_50px_rgba(0,163,255,0.25)] space-y-6 relative z-10 animate-scaleUp">
+      <div className="w-full max-w-lg glass-panel rounded-3xl p-6 sm:p-8 border border-[#00C8FF]/30 shadow-[0_0_50px_rgba(0,163,255,0.25)] space-y-6 relative z-10 animate-scaleUp my-auto max-h-[90vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
