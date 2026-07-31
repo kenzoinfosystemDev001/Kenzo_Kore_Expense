@@ -219,10 +219,10 @@ export const ExpenseListView: React.FC = () => {
                       ₹{exp.amount.toFixed(2)}
                     </td>
                     <td className="p-4">
-                      {(exp.policyViolations?.length || 0) > 0 ? (
+                      {exp.policyViolations.length > 0 ? (
                         <div className="flex items-center gap-1 text-amber-500 font-sans font-medium text-[10px] bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full w-fit">
                           <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
-                          <span>Violated ({(exp.policyViolations?.length || 0)})</span>
+                          <span>Violated ({exp.policyViolations.length})</span>
                         </div>
                       ) : (
                         <span className="text-gray-500 font-sans text-[10px]">Compliant</span>
@@ -284,29 +284,29 @@ export const ExpenseListView: React.FC = () => {
 
       {/* Dynamic Detailed Modal */}
       {activeExpense && (
-        <div className="fixed inset-0 z-50 bg-[#030304]/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          <div className="glass-panel w-full max-w-4xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-[#00C8FF]/20 max-h-[92vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-[#030304]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="glass-panel w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-white/[0.08] max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="p-4 sm:p-6 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="p-6 border-b border-white/[0.06] flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-[#00C8FF] font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-brand-orange-400 font-bold uppercase tracking-wider">
                   Expense Details — {activeExpense.id}
                 </span>
-                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5 sm:mt-1 truncate max-w-[240px] sm:max-w-md">{activeExpense.title}</h3>
+                <h3 className="text-xl font-bold text-white mt-1">{activeExpense.title}</h3>
               </div>
               <button
                 onClick={() => {
                   setActiveExpense(null);
                   setAdminComment('');
                 }}
-                className="text-gray-400 hover:text-white p-2 hover:bg-white/[0.04] rounded-lg transition-colors font-bold text-xs cursor-pointer"
+                className="text-gray-400 hover:text-white p-2 hover:bg-white/[0.04] rounded-lg transition-colors font-bold text-xs"
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column: Form Info */}
               <div className="space-y-6">
                 <div>

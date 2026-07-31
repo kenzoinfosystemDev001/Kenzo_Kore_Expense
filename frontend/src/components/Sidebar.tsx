@@ -38,9 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     { id: 'settings', name: 'Settings', icon: Settings },
   ];
 
-  if (!currentUser) return null;
-
-  const navItems = currentUser?.role === 'Employee' ? employeeNavItems : adminNavItems;
+  const navItems = currentUser.role === 'Employee' ? employeeNavItems : adminNavItems;
 
   return (
     <aside
@@ -72,10 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
           return (
             <button
               key={item.id}
-              onClick={() => {
-                setCurrentTab(item.id);
-                if (window.innerWidth < 768) setCollapsed(true);
-              }}
+              onClick={() => setCurrentTab(item.id)}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-200 group relative cursor-pointer ${
                 isActive
                   ? 'bg-gradient-to-r from-[#00A3FF]/20 via-[#00C8FF]/10 to-transparent border border-[#00C8FF]/30 text-white font-semibold shadow-[0_0_15px_rgba(0,163,255,0.15)]'

@@ -33,27 +33,25 @@ import {
 export const DashboardView: React.FC = () => {
   const { currentUser, expenses, budgets, setCurrentTab, users, deleteUser } = useApp();
 
-  if (!currentUser) return null;
-
   // Helper variables
   const isEmployee = currentUser?.role === 'Employee';
 
   // Calculations for employee context
-  const empExpenses = (expenses || []).filter(e => e && e.employeeId === currentUser?.id);
+  const empExpenses = expenses.filter(e => e.employeeId === currentUser?.id);
   const pendingReimbursement = empExpenses
-    .filter(e => e && (e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance' || e.status === 'Approved'))
-    .reduce((sum, e) => sum + (e.amount || 0), 0);
+    .filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance' || e.status === 'Approved')
+    .reduce((sum, e) => sum + e.amount, 0);
   const reimbursedTotal = empExpenses
-    .filter(e => e && (e.status === 'Approved' || e.status === 'Reimbursed'))
-    .reduce((sum, e) => sum + (e.amount || 0), 0);
-  const employeeSpentTotal = empExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const policyViolationsCount = empExpenses.filter(e => (e.policyViolations?.length || 0) > 0).length;
+    .filter(e => e.status === 'Approved' || e.status === 'Reimbursed')
+    .reduce((sum, e) => sum + e.amount, 0);
+  const employeeSpentTotal = empExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const policyViolationsCount = empExpenses.filter(e => e.policyViolations.length > 0).length;
 
   // Calculations for Admin / Manager context
-  const allSpend = (expenses || []).reduce((sum, e) => sum + (e?.amount || 0), 0);
-  const companyPending = (expenses || []).filter(e => e && (e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance')).length;
-  const companyReimbursed = (expenses || []).filter(e => e && (e.status === 'Approved' || e.status === 'Reimbursed')).reduce((sum, e) => sum + (e?.amount || 0), 0);
-  const totalEmployeesCount = (users || []).length;
+  const allSpend = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const companyPending = expenses.filter(e => e.status === 'Submitted' || e.status === 'Pending Manager' || e.status === 'Pending Finance').length;
+  const companyReimbursed = expenses.filter(e => e.status === 'Approved' || e.status === 'Reimbursed').reduce((sum, e) => sum + e.amount, 0);
+  const totalEmployeesCount = users.length;
 
   // Prepare chart data for employee (spend trend)
   const employeeTrendData = [
@@ -66,25 +64,23 @@ export const DashboardView: React.FC = () => {
 
   // Prepare category distribution chart data
   const categoryMap: { [key: string]: number } = {};
-  const relevantExpenses = isEmployee ? empExpenses : (expenses || []);
-  (relevantExpenses || []).forEach(e => {
-    if (e && e.category) {
-      categoryMap[e.category] = (categoryMap[e.category] || 0) + (e.amount || 0);
-    }
+  const relevantExpenses = isEmployee ? empExpenses : expenses;
+  relevantExpenses.forEach(e => {
+    categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
   });
 
   const pieData = Object.keys(categoryMap).map(key => ({
     name: key,
-    value: categoryMap[key] || 0
+    value: categoryMap[key]
   }));
 
   const COLORS = ['#00A3FF', '#00C8FF', '#10B981', '#3B82F6', '#00E0FF', '#38BDF8'];
 
   // Prepare budget progress data for Admin
-  const budgetProgressData = (budgets || []).map(b => ({
-    name: b && b.name ? (b.name.split(' ')[2] || b.name) : 'Budget',
-    Allocated: b ? (b.allocated || 0) : 0,
-    Spent: b ? (b.spent || 0) : 0
+  const budgetProgressData = budgets.map(b => ({
+    name: b.name.split(' ')[2] || b.name,
+    Allocated: b.allocated,
+    Spent: b.spent
   }));
 
   return (
@@ -399,13 +395,13 @@ export const DashboardView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {(relevantExpenses || []).slice(0, 4).map(exp => (
+              {relevantExpenses.slice(0, 4).map(exp => (
                 <tr key={exp.id} className="hover:bg-white/[0.02] transition-colors duration-150">
-                  <td className="p-4 font-bold text-white">{exp.merchant || 'Merchant'}</td>
+                  <td className="p-4 font-bold text-white">{exp.merchant}</td>
                   <td className="p-4 text-gray-400 font-sans">{exp.date}</td>
                   <td className="p-4 text-gray-300">{exp.category}</td>
                   {!isEmployee && <td className="p-4 text-gray-300 font-semibold">{exp.employeeName}</td>}
-                  <td className="p-4 font-bold text-white">₹{(exp.amount || 0).toFixed(2)}</td>
+                  <td className="p-4 font-bold text-white">₹{exp.amount.toFixed(2)}</td>
                   <td className="p-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
@@ -462,7 +458,7 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
-                {(users || []).map(u => (
+                {users.map(u => (
                   <tr key={u.id} className="hover:bg-white/[0.02] transition-colors duration-150">
                     <td className="p-4 font-bold text-white flex items-center gap-2.5">
                       <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-white/10" style={{ width: '28px', height: '28px', minWidth: '28px', minHeight: '28px', maxWidth: '28px', maxHeight: '28px' }} />

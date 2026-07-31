@@ -20,18 +20,18 @@ export const AuthView: React.FC = () => {
     setError('');
 
     try {
-      const res = await login(email, password);
+      const success = await login(email, password);
       setLoading(false);
-      if (res.success) {
+      if (success) {
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 }
         });
       } else {
-        setError(res.error || 'Authentication failed: Invalid credentials.');
+        setError('Invalid email or password.');
       }
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
       setError('Connection to corporate authentication service failed. Please check backend server.');
     }

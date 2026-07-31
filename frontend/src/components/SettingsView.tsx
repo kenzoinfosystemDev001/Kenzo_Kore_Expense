@@ -17,13 +17,7 @@ import {
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, updateUserPassword, currentUser } = useApp();
-
-  // Change Password Form States
-  const [newPasswordVal, setNewPasswordVal] = useState('');
-  const [confirmPasswordVal, setConfirmPasswordVal] = useState('');
-  const [pwdStatusMsg, setPwdStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
-  const [pwdLoading, setPwdLoading] = useState(false);
+  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser } = useApp();
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -35,30 +29,6 @@ export const SettingsView: React.FC = () => {
   const [departmentId, setDepartmentId] = useState('dept_eng');
   const [avatar, setAvatar] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  const handleSelfPasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    if (newPasswordVal.length < 4) {
-      setPwdStatusMsg({ text: 'Password must be at least 4 characters long.', isError: true });
-      return;
-    }
-    if (newPasswordVal !== confirmPasswordVal) {
-      setPwdStatusMsg({ text: 'New password and confirmation do not match.', isError: true });
-      return;
-    }
-    setPwdLoading(true);
-    setPwdStatusMsg(null);
-    const success = await updateUserPassword(currentUser.id, newPasswordVal);
-    setPwdLoading(false);
-    if (success) {
-      setPwdStatusMsg({ text: 'Security Password changed successfully!', isError: false });
-      setNewPasswordVal('');
-      setConfirmPasswordVal('');
-    } else {
-      setPwdStatusMsg({ text: 'Failed to update security password.', isError: true });
-    }
-  };
 
   const handleDeviceAvatarUpload = async (userId: string, file: File) => {
     try {
@@ -172,57 +142,6 @@ export const SettingsView: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Account Security & Password Change Card */}
-      <div className="glass-panel p-6 rounded-3xl border border-[#00C8FF]/20 space-y-4">
-        <div className="flex justify-between items-center border-b border-[#00C8FF]/15 pb-3">
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-[#00C8FF]" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Account Security & Password Management</h3>
-          </div>
-          <span className="text-[10px] text-[#00C8FF] bg-[#00A3FF]/10 border border-[#00C8FF]/20 px-2.5 py-1 rounded-full font-bold">ACTIVE USER: {currentUser.name}</span>
-        </div>
-
-        {pwdStatusMsg && (
-          <div className={`p-3 rounded-xl text-xs font-medium text-center ${pwdStatusMsg.isError ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'}`}>
-            {pwdStatusMsg.text}
-          </div>
-        )}
-
-        <form onSubmit={handleSelfPasswordChange} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pt-1">
-          <div className="space-y-1.5">
-            <label className="text-xs text-gray-400">New Security Password</label>
-            <input
-              type="password"
-              value={newPasswordVal}
-              onChange={e => setNewPasswordVal(e.target.value)}
-              placeholder="Enter new password"
-              className="w-full bg-[#030712]/80 border border-[#00C8FF]/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:border-[#00C8FF] font-sans"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs text-gray-400">Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPasswordVal}
-              onChange={e => setConfirmPasswordVal(e.target.value)}
-              placeholder="Confirm new password"
-              className="w-full bg-[#030712]/80 border border-[#00C8FF]/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:border-[#00C8FF] font-sans"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={pwdLoading}
-            className="py-2.5 px-6 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs shadow-[0_0_15px_rgba(0,163,255,0.3)] transition-all cursor-pointer disabled:opacity-50"
-          >
-            {pwdLoading ? 'Updating...' : 'Update Password'}
-          </button>
-        </form>
       </div>
 
       {/* Grid Settings Panels */}

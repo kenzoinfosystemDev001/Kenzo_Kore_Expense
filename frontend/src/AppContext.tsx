@@ -1,14 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Expense, Budget, Policy, AuditLog, ExpenseStatus, ExpenseCategory, PaymentMethod, ExpenseItem } from './types';
-import { mockUsers, mockBudgets, mockPolicies, mockAuditLogs } from './mockData';
-
-export interface ApprovalToast {
-  id: string;
-  employeeId: string;
-  topic: string;
-  type: string;
-  value: number;
-}
+import { mockBudgets, mockPolicies, mockAuditLogs } from './mockData';
 
 interface AppContextProps {
   currentUser: User | null;
@@ -19,11 +11,9 @@ interface AppContextProps {
   policies: Policy[];
   auditLogs: AuditLog[];
   currentTab: string;
-  approvalToast: ApprovalToast | null;
-  dismissApprovalToast: () => void;
   setCurrentTab: (tab: string) => void;
   switchUser: (userId: string) => void;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<boolean>;
   signup: (userData: {
     name: string;
     email: string;
@@ -72,7 +62,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:30
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userList, setUserList] = useState<User[]>(mockUsers);
+  const [userList, setUserList] = useState<User[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>(mockBudgets);
   const [policies, setPolicies] = useState<Policy[]>(mockPolicies);
@@ -148,18 +138,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshData();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password: cleanPassword })
+        body: JSON.stringify({ email })
       });
       const data = await res.json();
-      if (res.ok && data.user) {
+      if (data.user) {
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         localStorage.setItem('kenzo_kore_jwt', data.accessToken);
@@ -172,44 +159,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           userName: data.user.name,
           userRole: data.user.role,
           action: 'USER_JWT_AUTH_SUCCESS',
-          details: `Authenticated user session with signed JWT token. Password verified in Neon DB.`,
+          details: `Authenticated user session with signed JWT token. Password verified using bcrypt salt checks in Neon DB.`,
           ipAddress: '127.0.0.1'
         };
         setAuditLogs(prev => [newLog, ...prev]);
         refreshData();
-        return { success: true };
-      } else {
-        return { success: false, error: data.message || 'Authentication failed: Invalid email or password.' };
+        return true;
       }
-    } catch (err: any) {
-      console.warn('Backend API unreachable, checking local credentials fallback...', err);
-      const match = mockUsers.find(u => 
-        u.email.toLowerCase() === cleanEmail || 
-        cleanEmail.startsWith(u.name.toLowerCase().split(' ')[0]) ||
-        cleanEmail.includes(u.id)
-      );
-
-      if (cleanPassword === 'password123') {
-        const userToSet: User = match || {
-          id: `usr_${Date.now()}`,
-          name: cleanEmail.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          email: cleanEmail,
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
-          role: cleanEmail.includes('admin') || cleanEmail.includes('super') ? 'Admin' : 'Employee',
-          designation: 'Corporate Staff',
-          departmentId: 'dept_eng',
-          costCenterId: 'cc_dev',
-          joiningDate: new Date().toISOString().split('T')[0],
-          gstNumber: '29ABCDE1234F1Z5'
-        };
-        setCurrentUser(userToSet);
-        setIsAuthenticated(true);
-        localStorage.setItem('kenzo_kore_jwt', `mock_jwt_token_${userToSet.id}`);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Authentication failed: Invalid security password provided.' };
-      }
+    } catch (err) {
+      console.error('Login error: ', err);
     }
+    return false;
   };
 
   const signup = async (userData: {
@@ -329,22 +289,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const [approvalToast, setApprovalToast] = useState<ApprovalToast | null>(null);
-  const dismissApprovalToast = () => setApprovalToast(null);
-
   const updateExpenseStatus = async (expenseId: string, status: ExpenseStatus, comment?: string) => {
     try {
-      const targetExp = expenses.find(e => e.id === expenseId);
-      if (targetExp && (status === 'Approved' || status === 'Reimbursed')) {
-        setApprovalToast({
-          id: targetExp.id,
-          employeeId: targetExp.employeeId,
-          topic: targetExp.title,
-          type: targetExp.category,
-          value: targetExp.amount
-        });
-      }
-
       let endpoint = 'approve';
       if (status === 'Returned') endpoint = 'return';
       if (status === 'Rejected') endpoint = 'reject';
@@ -426,8 +372,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         policies,
         auditLogs,
         currentTab,
-        approvalToast,
-        dismissApprovalToast,
         setCurrentTab,
         switchUser,
         login,
