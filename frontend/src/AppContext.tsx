@@ -13,7 +13,7 @@ interface AppContextProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
   switchUser: (userId: string) => void;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (userData: {
     name: string;
     email: string;
@@ -138,15 +138,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshData();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (data.user) {
+      if (res.ok && data.user) {
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         localStorage.setItem('kenzo_kore_jwt', data.accessToken);
@@ -159,17 +159,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           userName: data.user.name,
           userRole: data.user.role,
           action: 'USER_JWT_AUTH_SUCCESS',
-          details: `Authenticated user session with signed JWT token. Password verified using bcrypt salt checks in Neon DB.`,
+          details: `Authenticated user session with signed JWT token. Password verified in Neon DB.`,
           ipAddress: '127.0.0.1'
         };
         setAuditLogs(prev => [newLog, ...prev]);
         refreshData();
-        return true;
+        return { success: true };
+      } else {
+        return { success: false, error: data.message || 'Authentication failed. Please check your credentials.' };
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error: ', err);
+      return { success: false, error: 'Connection error to authentication server.' };
     }
-    return false;
   };
 
   const signup = async (userData: {
