@@ -83,11 +83,15 @@ export class AuthController {
       });
     }
 
-    // Verify password if user has password set
-    if (user.password && body.password) {
-      const isValid = await bcrypt.compare(body.password, user.password).catch(() => true);
-      // Fallback for seamless compatibility if unhashed password matches
-      if (!isValid && user.password !== body.password && user.password !== 'password123') {
+    // Verify password strictly against stored database credentials
+    if (!body.password) {
+      throw new UnauthorizedException('Password is required');
+    }
+
+    if (user.password) {
+      const isBcryptMatch = await bcrypt.compare(body.password, user.password).catch(() => false);
+      const isPlainMatch = user.password === body.password;
+      if (!isBcryptMatch && !isPlainMatch) {
         throw new UnauthorizedException('Invalid email or password credentials');
       }
     }

@@ -167,10 +167,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, password })
       });
+      if (!res.ok) {
+        return false;
+      }
       const data = await res.json();
-      if (data.user) {
+      if (data.user && data.accessToken) {
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         localStorage.setItem('kenzo_kore_jwt', data.accessToken);
