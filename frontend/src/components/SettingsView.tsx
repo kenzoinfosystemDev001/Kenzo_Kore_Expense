@@ -19,8 +19,7 @@ import {
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser } = useApp();
-  const [showSelfPasswordModal, setShowSelfPasswordModal] = useState(false);
+  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser, openPasswordModal } = useApp();
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -127,9 +126,6 @@ export const SettingsView: React.FC = () => {
         </p>
       </div>
 
-      {/* Modal for user password change */}
-      <ChangePasswordModal isOpen={showSelfPasswordModal} onClose={() => setShowSelfPasswordModal(false)} />
-
       {/* Personal Security & Credentials Panel */}
       {currentUser && (
         <div className="glass-panel p-6 rounded-3xl border border-[#00C8FF]/25 bg-gradient-to-r from-[#00A3FF]/10 via-[#00C8FF]/5 to-transparent space-y-4 shadow-[0_0_30px_rgba(0,163,255,0.15)]">
@@ -152,7 +148,7 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setShowSelfPasswordModal(true)}
+              onClick={openPasswordModal}
               className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
             >
               <Lock className="w-4 h-4" />

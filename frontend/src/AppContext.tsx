@@ -57,6 +57,9 @@ interface AppContextProps {
   updatePolicy: (id: string, limit: number, enabled: boolean) => void;
   approvedPopups: ApprovedPopup[];
   dismissApprovedPopup: (id: string) => void;
+  isPasswordModalOpen: boolean;
+  openPasswordModal: () => void;
+  closePasswordModal: () => void;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -427,6 +430,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addAuditLog('POLICY_CONFIG_UPDATED', `Updated policy ${id} limits to ₹${limit.toFixed(2)}: ${enabled ? 'Enabled' : 'Disabled'}`);
   };
 
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const openPasswordModal = () => setIsPasswordModalOpen(true);
+  const closePasswordModal = () => setIsPasswordModalOpen(false);
+
   return (
     <AppContext.Provider
       value={{
@@ -456,7 +463,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addAuditLog,
         updatePolicy,
         approvedPopups,
-        dismissApprovedPopup
+        dismissApprovedPopup,
+        isPasswordModalOpen,
+        openPasswordModal,
+        closePasswordModal
       }}
     >
       {children}

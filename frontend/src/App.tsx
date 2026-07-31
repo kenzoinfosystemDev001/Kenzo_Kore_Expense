@@ -11,12 +11,13 @@ import { AuditLogsView } from './components/AuditLogsView';
 import { SettingsView } from './components/SettingsView';
 import { AIChatAssistant } from './components/AIChatAssistant';
 import { ApprovedExpenseModal } from './components/ApprovedExpenseModal';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { AuthView } from './components/AuthView';
 
 function App() {
-  const { currentTab, isAuthenticated, authLoading } = useApp();
+  const { currentTab, isAuthenticated, authLoading, isPasswordModalOpen, closePasswordModal } = useApp();
   const [collapsed, setCollapsed] = useState(true);
 
   // Loading state during token validation on mount
@@ -60,8 +61,9 @@ function App() {
 
   return (
     <div className="flex bg-[#030712] min-h-screen text-[#F3F4F6] font-sans selection:bg-[#00A3FF] selection:text-white relative">
-      {/* Targeted Employee Expense Approved Pop-up Modal */}
+      {/* Global Root Modals */}
       <ApprovedExpenseModal />
+      <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={closePasswordModal} />
 
       {/* Dynamic Confetti Canvas placement holder */}
       <canvas id="confetti-canvas" />
