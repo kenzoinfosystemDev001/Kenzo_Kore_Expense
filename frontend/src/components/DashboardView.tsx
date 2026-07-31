@@ -272,6 +272,7 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <div className="h-72 w-full text-xs">
+            {/* Recharts Analytics Rendering */}
             {isEmployee ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={employeeTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
