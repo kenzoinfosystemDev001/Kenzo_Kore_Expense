@@ -284,7 +284,11 @@ export const DashboardView: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                   <XAxis dataKey="date" stroke="#ffffff40" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="#ffffff40" fontSize={10} tickLine={false} axisLine={false} tickFormatter={value => `₹${value}`} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#090A0F', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
+                    labelStyle={{ color: '#fff' }}
+                    formatter={(value: any) => `₹${value}`}
+                  />
                   <Area type="monotone" dataKey="amount" name="Spent (₹)" stroke="#7C3AED" strokeWidth={2} fillOpacity={1} fill="url(#colorSpent)" />
                 </AreaChart>
               </ResponsiveContainer>
