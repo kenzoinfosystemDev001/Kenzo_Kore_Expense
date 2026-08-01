@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../AppContext';
 import { Expense, ExpenseStatus } from '../types';
+import { downloadFileAutomatically } from '../utils/downloadHelper';
 import {
   Check,
   X,
@@ -105,17 +106,15 @@ export const ApprovalQueueView: React.FC = () => {
                 {/* Attached Bill / Receipt Download Link */}
                 {exp.receiptUrl && (
                   <div className="pt-1">
-                    <a
-                      href={exp.receiptUrl}
-                      download={`${exp.title.replace(/\s+/g, '_')}_Bill`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => downloadFileAutomatically(exp.receiptUrl!, `${exp.title.replace(/\s+/g, '_')}_Bill`)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A3FF]/10 border border-[#00C8FF]/30 hover:bg-[#00A3FF]/20 text-[#00C8FF] text-[11px] font-semibold transition cursor-pointer"
-                      title="Download uploaded document receipt (PDF or Image)"
+                      title="Download uploaded document receipt automatically (PDF or Image)"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download Attached Bill / Receipt (PDF / Image)</span>
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

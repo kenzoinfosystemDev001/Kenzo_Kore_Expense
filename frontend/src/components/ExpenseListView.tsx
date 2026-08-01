@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../AppContext';
 import { Expense, ExpenseStatus, ExpenseCategory } from '../types';
+import { downloadFileAutomatically } from '../utils/downloadHelper';
 import {
   Search,
   Filter,
@@ -416,16 +417,14 @@ export const ExpenseListView: React.FC = () => {
                               <span>View PDF</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </a>
-                            <a
-                              href={activeExpense.receiptUrl}
-                              download={`${activeExpense.title.replace(/\s+/g, '_')}_Bill.pdf`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => downloadFileAutomatically(activeExpense.receiptUrl!, `${activeExpense.title.replace(/\s+/g, '_')}_Bill`)}
                               className="px-3.5 py-2 bg-[#00A3FF]/10 border border-[#00C8FF]/30 hover:bg-[#00A3FF]/20 text-[#00C8FF] font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span>Download PDF</span>
-                            </a>
+                            </button>
                           </div>
                         </div>
                       ) : activeExpense.receiptUrl.startsWith('blob:') || activeExpense.receiptUrl.startsWith('http') || activeExpense.receiptUrl.startsWith('data:') ? (
@@ -436,16 +435,14 @@ export const ExpenseListView: React.FC = () => {
                             className="w-full h-56 object-contain rounded-2xl border border-white/[0.08] bg-black/25"
                             alt="Receipt Preview Image"
                           />
-                          <a
-                            href={activeExpense.receiptUrl}
-                            download={`${activeExpense.title.replace(/\s+/g, '_')}_Receipt.jpg`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => downloadFileAutomatically(activeExpense.receiptUrl!, `${activeExpense.title.replace(/\s+/g, '_')}_Receipt`)}
                             className="w-full py-2 bg-[#00A3FF]/10 border border-[#00C8FF]/30 hover:bg-[#00A3FF]/20 text-[#00C8FF] font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>Download Receipt Image</span>
-                          </a>
+                          </button>
                         </div>
                       ) : (
                         /* Render default presets with download button */
@@ -455,16 +452,14 @@ export const ExpenseListView: React.FC = () => {
                           </div>
                           <span className="text-white font-bold truncate max-w-[200px] block">{activeExpense.receiptUrl}</span>
                           <span className="text-gray-500 mt-1 font-sans">Simulated OCR scanning confirmed. File secured in S3 storage vault.</span>
-                          <a
-                            href={activeExpense.receiptUrl}
-                            download={`${activeExpense.title.replace(/\s+/g, '_')}_Document`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => downloadFileAutomatically(activeExpense.receiptUrl!, `${activeExpense.title.replace(/\s+/g, '_')}_Document`)}
                             className="mt-4 text-xs font-semibold text-[#00C8FF] hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>Download Original Document (PDF / Image)</span>
-                          </a>
+                          </button>
                         </div>
                       )}
                     </div>

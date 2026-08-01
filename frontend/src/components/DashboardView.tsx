@@ -66,30 +66,35 @@ export const DashboardView: React.FC = () => {
   const companyReimbursed = expenses.filter(e => e.status === 'Approved' || e.status === 'Reimbursed').reduce((sum, e) => sum + e.amount, 0);
   const totalEmployeesCount = users.length;
 
-  // Distinct Color Palette per Category
-  const CATEGORY_COLORS: { [key: string]: string } = {
-    'Travel': '#00A3FF',               // Electric Cyan
-    'Meals': '#FF2E93',                // Neon Pink
-    'Accommodation': '#10B981',        // Emerald Green
-    'Fuel': '#F59E0B',                 // Amber Gold
-    'Taxi': '#3B82F6',                 // Royal Blue
-    'Flight': '#8B5CF6',               // Purple
-    'Software Subscription': '#EC4899', // Rose Pink
-    'Cloud Services': '#06B6D4',       // Cyan
-    'Office Supplies': '#F97316',      // Orange
-    'Internet': '#6366F1',             // Indigo
-    'Mobile': '#14B8A6',               // Teal
-    'Marketing': '#EAB308',             // Yellow
-    'Medical': '#EF4444',               // Red
-    'Training': '#84CC16',              // Lime Green
-    'Entertainment': '#A855F7',         // Bright Violet
-    'Other': '#94A3B8'                  // Slate Gray
-  };
+  // Category Breakdown Color Hierarchy:
+  // Rank 1 (highest): Green (#10B981)
+  // Rank 2: Blue (#00A3FF)
+  // Rank 3: Yellow (#EAB308)
+  // Rank 4: Orange (#F97316)
+  // Rank 5: Purple (#A855F7)
+  // Rank 6: Pink (#EC4899)
+  // Rank 7+ (remaining/last): Red (#EF4444)
+  const RANKED_COLORS = ['#10B981', '#00A3FF', '#EAB308', '#F97316', '#A855F7', '#EC4899', '#EF4444'];
+  const getRankColor = (index: number) => RANKED_COLORS[Math.min(index, RANKED_COLORS.length - 1)];
 
-  const getCategoryColor = (name: string, index: number) => {
-    if (CATEGORY_COLORS[name]) return CATEGORY_COLORS[name];
-    const fallbackColors = ['#00A3FF', '#FF2E93', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4'];
-    return fallbackColors[index % fallbackColors.length];
+  // Quarter Filter Helper:
+  // Q1: Last 3 months (0 to 3 months prior)
+  // Q2: 3 months before Q1 (3 to 6 months prior)
+  // Q3: 3 months before Q2 (6 to 9 months prior)
+  // Q4: 3 months before Q3 (9 to 12 months prior)
+  const isDateInQuarter = (dateStr: string, quarter: string) => {
+    if (!dateStr) return false;
+    const expDate = new Date(dateStr);
+    const now = new Date();
+    
+    // Total months difference
+    const monthDiff = (now.getFullYear() - expDate.getFullYear()) * 12 + (now.getMonth() - expDate.getMonth());
+
+    if (quarter === 'Q1') return monthDiff >= 0 && monthDiff < 3;
+    if (quarter === 'Q2') return monthDiff >= 3 && monthDiff < 6;
+    if (quarter === 'Q3') return monthDiff >= 6 && monthDiff < 9;
+    if (quarter === 'Q4') return monthDiff >= 9 && monthDiff < 12;
+    return true;
   };
 
   // Filtered Spend Analysis data based on Calendar Date or Dropdown Period
@@ -105,14 +110,15 @@ export const DashboardView: React.FC = () => {
     }
 
     if (selectedPeriod !== 'ALL') {
+      if (['Q1', 'Q2', 'Q3', 'Q4'].includes(selectedPeriod)) {
+        return list.filter(e => isDateInQuarter(e.date, selectedPeriod));
+      }
+
       let days = 0;
       if (selectedPeriod === '15') days = 15;
       else if (selectedPeriod === '30') days = 30;
       else if (selectedPeriod === '60') days = 60;
-      else if (selectedPeriod === '90' || selectedPeriod === 'Q1') days = 90;
-      else if (selectedPeriod === 'Q2') days = 180;
-      else if (selectedPeriod === 'Q3') days = 270;
-      else if (selectedPeriod === 'Q4') days = 365;
+      else if (selectedPeriod === '90') days = 90;
 
       if (days > 0) {
         const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
@@ -134,27 +140,46 @@ export const DashboardView: React.FC = () => {
     dateMap[label] = (dateMap[label] || 0) + e.amount;
   });
 
-  const trendChartData = Object.keys(dateMap).length > 0
-    ? Object.keys(dateMap).map(d => ({ date: d, amount: dateMap[d] }))
-    : [
-        { date: 'Jul 02', amount: 45.90 },
-        { date: 'Jul 12', amount: 345.00 },
-        { date: 'Jul 25', amount: 120.00 },
-        { date: 'Jul 26', amount: 120.00 },
-        { date: 'Jul 28', amount: 1450.50 }
-      ];
+  // Accurate graph dataset generation without fake hardcoded July fallbacks when filtering
+  const getTrendChartData = () => {
+    if (Object.keys(dateMap).length > 0) {
+      return Object.keys(dateMap).map(d => ({ date: d, amount: dateMap[d] }));
+    }
 
-  // Prepare category distribution chart data
+    if (selectedSpendDate) {
+      const formatted = new Date(selectedSpendDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      return [{ date: formatted, amount: 0 }];
+    }
+
+    if (selectedPeriod !== 'ALL') {
+      return [{ date: selectedPeriod, amount: 0 }];
+    }
+
+    // Default empty overview if no expenses logged
+    return [
+      { date: 'Jul 02', amount: 45.90 },
+      { date: 'Jul 12', amount: 345.00 },
+      { date: 'Jul 25', amount: 120.00 },
+      { date: 'Jul 26', amount: 120.00 },
+      { date: 'Jul 28', amount: 1450.50 }
+    ];
+  };
+
+  const trendChartData = getTrendChartData();
+
+  // Prepare category distribution chart data sorted by spend amount descending for exact color ranking
   const categoryMap: { [key: string]: number } = {};
   const relevantExpenses = isEmployee ? empExpenses : expenses;
   relevantExpenses.forEach(e => {
     categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
   });
 
-  const pieData = Object.keys(categoryMap).map(key => ({
-    name: key,
-    value: categoryMap[key]
-  }));
+  const pieData = Object.keys(categoryMap)
+    .map(key => ({
+      name: key,
+      value: categoryMap[key]
+    }))
+    .sort((a, b) => b.value - a.value); // Sort descending for 1st Most -> Green, 2nd -> Blue, etc.
 
   // Prepare budget progress data for Admin
   const budgetProgressData = budgets.map(b => ({
@@ -394,13 +419,14 @@ export const DashboardView: React.FC = () => {
                     setSelectedSpendDate(e.target.value);
                     setSelectedPeriod('ALL');
                   }}
-                  className="bg-[#030712]/90 border border-[#00C8FF]/30 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00C8FF] transition cursor-pointer"
+                  className="bg-[#030712]/90 border border-[#00C8FF]/40 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00C8FF] transition cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
+                  style={{ colorScheme: 'dark' }}
                   title="Select a specific calendar date"
                 />
                 {selectedSpendDate && (
                   <button
                     onClick={() => setSelectedSpendDate('')}
-                    className="ml-1 text-gray-400 hover:text-white p-1"
+                    className="ml-1 text-gray-400 hover:text-white p-1 cursor-pointer"
                     title="Clear date filter"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -408,24 +434,24 @@ export const DashboardView: React.FC = () => {
                 )}
               </div>
 
-              {/* Time Period Dropdown */}
+              {/* Time Period Dropdown (without bracket text) */}
               <select
                 value={selectedPeriod}
                 onChange={e => {
                   setSelectedPeriod(e.target.value);
                   setSelectedSpendDate('');
                 }}
-                className="bg-[#030712]/90 border border-[#00C8FF]/30 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#00C8FF] transition cursor-pointer"
+                className="bg-[#030712]/90 border border-[#00C8FF]/40 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#00C8FF] transition cursor-pointer"
               >
                 <option value="ALL">All Time</option>
                 <option value="15">Last 15 Days</option>
                 <option value="30">Last 30 Days</option>
                 <option value="60">Last 60 Days</option>
                 <option value="90">Last 90 Days</option>
-                <option value="Q1">Q1 (Last 3 Months)</option>
-                <option value="Q2">Q2 (Last 6 Months)</option>
-                <option value="Q3">Q3 (Last 9 Months)</option>
-                <option value="Q4">Q4 (Last 1 Year)</option>
+                <option value="Q1">Q1</option>
+                <option value="Q2">Q2</option>
+                <option value="Q3">Q3</option>
+                <option value="Q4">Q4</option>
               </select>
             </div>
           </div>
@@ -475,7 +501,7 @@ export const DashboardView: React.FC = () => {
                     labelLine={false}
                   >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name, index)} />
+                      <Cell key={`cell-${index}`} fill={getRankColor(index)} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -496,11 +522,11 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          {/* Pie Chart Legend with Distinct Category Colors */}
+          {/* Pie Chart Legend with Exact Ranked Colors (1st -> Green, 2nd -> Blue, 3rd -> Yellow, etc.) */}
           <div className="grid grid-cols-2 gap-2 text-[10px] font-medium max-h-28 overflow-y-auto pr-1">
             {pieData.map((d, index) => (
               <div key={d.name} className="flex items-center gap-1.5 truncate">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getCategoryColor(d.name, index) }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getRankColor(index) }} />
                 <span className="text-gray-300 truncate">{d.name}</span>
                 <span className="text-white ml-auto">₹{d.value.toFixed(0)}</span>
               </div>
