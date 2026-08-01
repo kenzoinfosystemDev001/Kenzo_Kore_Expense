@@ -6,6 +6,7 @@ import {
   Filter,
   Eye,
   FileDown,
+  Download,
   Trash2,
   AlertOctagon,
   Calendar,
@@ -394,9 +395,9 @@ export const ExpenseListView: React.FC = () => {
                 <div>
                   <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Receipt / Bill Attachment</h4>
                   {activeExpense.receiptUrl ? (
-                    <div>
+                    <div className="space-y-3">
                       {activeExpense.receiptUrl.toLowerCase().includes('.pdf') || activeExpense.receiptUrl.includes('application/pdf') || activeExpense.title.toLowerCase().includes('pdf') || activeExpense.businessPurpose.toLowerCase().includes('pdf') ? (
-                        /* Render PDF viewer & open document link */
+                        /* Render PDF viewer & download link */
                         <div className="border border-white/[0.08] rounded-2xl p-6 bg-white/[0.02] flex flex-col items-center justify-center h-64 text-center space-y-3">
                           <div className="w-14 h-14 rounded-2xl bg-brand-purple-500/10 border border-brand-purple-500/20 flex items-center justify-center">
                             <FileText className="w-7 h-7 text-brand-purple-400" />
@@ -405,25 +406,49 @@ export const ExpenseListView: React.FC = () => {
                             <span className="text-white font-bold text-xs block">PDF Bill Document</span>
                             <span className="text-gray-400 text-[10px] font-sans mt-0.5 block">Official PDF receipt uploaded by employee</span>
                           </div>
-                          <a
-                            href={activeExpense.receiptUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-4 py-2 bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-bold text-xs rounded-xl transition shadow-lg flex items-center gap-1.5"
-                          >
-                            <span>Open & View PDF Receipt</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </a>
+                          <div className="flex gap-2">
+                            <a
+                              href={activeExpense.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2 bg-gradient-to-r from-brand-purple-600 to-brand-orange-500 hover:from-brand-purple-700 hover:to-brand-orange-600 text-white font-bold text-xs rounded-xl transition shadow-lg flex items-center gap-1.5"
+                            >
+                              <span>View PDF</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </a>
+                            <a
+                              href={activeExpense.receiptUrl}
+                              download={`${activeExpense.title.replace(/\s+/g, '_')}_Bill.pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2 bg-[#00A3FF]/10 border border-[#00C8FF]/30 hover:bg-[#00A3FF]/20 text-[#00C8FF] font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Download PDF</span>
+                            </a>
+                          </div>
                         </div>
                       ) : activeExpense.receiptUrl.startsWith('blob:') || activeExpense.receiptUrl.startsWith('http') || activeExpense.receiptUrl.startsWith('data:') ? (
-                        /* Render direct live image uploads */
-                        <img
-                          src={activeExpense.receiptUrl}
-                          className="w-full h-64 object-contain rounded-2xl border border-white/[0.08] bg-black/25"
-                          alt="Receipt Preview Image"
-                        />
+                        /* Render direct live image uploads with download button */
+                        <div className="space-y-2">
+                          <img
+                            src={activeExpense.receiptUrl}
+                            className="w-full h-56 object-contain rounded-2xl border border-white/[0.08] bg-black/25"
+                            alt="Receipt Preview Image"
+                          />
+                          <a
+                            href={activeExpense.receiptUrl}
+                            download={`${activeExpense.title.replace(/\s+/g, '_')}_Receipt.jpg`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2 bg-[#00A3FF]/10 border border-[#00C8FF]/30 hover:bg-[#00A3FF]/20 text-[#00C8FF] font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download Receipt Image</span>
+                          </a>
+                        </div>
                       ) : (
-                        /* Render default presets */
+                        /* Render default presets with download button */
                         <div className="border border-white/[0.06] rounded-2xl overflow-hidden bg-black/40 h-64 flex flex-col items-center justify-center p-6 text-center text-xs">
                           <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-3">
                             <FileDown className="w-8 h-8 text-brand-purple-400" />
@@ -431,11 +456,14 @@ export const ExpenseListView: React.FC = () => {
                           <span className="text-white font-bold truncate max-w-[200px] block">{activeExpense.receiptUrl}</span>
                           <span className="text-gray-500 mt-1 font-sans">Simulated OCR scanning confirmed. File secured in S3 storage vault.</span>
                           <a
-                            href="#"
-                            onClick={e => { e.preventDefault(); alert('Downloading file package... (Presigned S3 link generated)'); }}
-                            className="mt-4 text-xs font-semibold text-brand-purple-400 hover:underline flex items-center gap-1"
+                            href={activeExpense.receiptUrl}
+                            download={`${activeExpense.title.replace(/\s+/g, '_')}_Document`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 text-xs font-semibold text-[#00C8FF] hover:underline flex items-center gap-1 cursor-pointer"
                           >
-                            Download Original Receipt
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download Original Document (PDF / Image)</span>
                           </a>
                         </div>
                       )}

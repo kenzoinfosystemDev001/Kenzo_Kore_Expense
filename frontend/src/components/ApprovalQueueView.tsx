@@ -8,6 +8,7 @@ import {
   MessageSquare,
   AlertTriangle,
   FileText,
+  Download,
   User,
   ArrowRight,
   TrendingDown
@@ -101,10 +102,20 @@ export const ApprovalQueueView: React.FC = () => {
                   )}
                 </div>
 
-                {/* Policy violation list */}
-                {exp.policyViolations.length > 0 && (
-                  <div className="p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-[10px] text-gray-400 font-sans leading-relaxed">
-                    <strong>Flags:</strong> {exp.policyViolations.join('; ')}
+                {/* Attached Bill / Receipt Download Link */}
+                {exp.receiptUrl && (
+                  <div className="pt-1">
+                    <a
+                      href={exp.receiptUrl}
+                      download={`${exp.title.replace(/\s+/g, '_')}_Bill`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A3FF]/10 border border-[#00C8FF]/30 hover:bg-[#00A3FF]/20 text-[#00C8FF] text-[11px] font-semibold transition cursor-pointer"
+                      title="Download uploaded document receipt (PDF or Image)"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Attached Bill / Receipt (PDF / Image)</span>
+                    </a>
                   </div>
                 )}
               </div>
