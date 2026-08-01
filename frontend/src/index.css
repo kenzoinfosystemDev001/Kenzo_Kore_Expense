@@ -96,3 +96,13 @@ input:focus, select:focus, textarea:focus {
   border-color: rgba(0, 200, 255, 0.6) !important;
   box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.2) !important;
 }
+
+/* Force calendar picker indicator icon to be bright white & electric cyan on all browsers */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2) drop-shadow(0 0 4px #00C8FF) !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  border-radius: 4px;
+  padding: 2px;
+}
+

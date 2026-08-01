@@ -36,6 +36,7 @@ import {
 
 export const DashboardView: React.FC = () => {
   const { currentUser, expenses, budgets, setCurrentTab, users, deleteUser } = useApp();
+  const dateInputRef = React.useRef<HTMLInputElement>(null);
 
   // Spend Analysis Date & Period State
   const [selectedSpendDate, setSelectedSpendDate] = useState<string>('');
@@ -410,9 +411,13 @@ export const DashboardView: React.FC = () => {
             {/* Calendar Date Picker & Period Filter Dropdown */}
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Calendar Date Picker */}
-              <div className="relative flex items-center">
-                <CalendarIcon className="w-3.5 h-3.5 text-[#00C8FF] absolute left-3 pointer-events-none" />
+              <div
+                onClick={() => dateInputRef.current?.showPicker()}
+                className="relative flex items-center cursor-pointer group"
+              >
+                <CalendarIcon className="w-3.5 h-3.5 text-[#00C8FF] absolute left-3 pointer-events-none group-hover:scale-110 transition-transform" />
                 <input
+                  ref={dateInputRef}
                   type="date"
                   value={selectedSpendDate}
                   onChange={e => {
@@ -421,7 +426,7 @@ export const DashboardView: React.FC = () => {
                   }}
                   className="bg-[#030712]/90 border border-[#00C8FF]/40 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00C8FF] transition cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
                   style={{ colorScheme: 'dark' }}
-                  title="Select a specific calendar date"
+                  title="Click to open calendar date picker"
                 />
                 {selectedSpendDate && (
                   <button
