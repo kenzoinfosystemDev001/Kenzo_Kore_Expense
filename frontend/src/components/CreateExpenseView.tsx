@@ -10,7 +10,12 @@ import {
   AlertTriangle,
   ArrowRight,
   TrendingDown,
-  Sparkles
+  Sparkles,
+  Camera,
+  Video,
+  X,
+  RefreshCw,
+  Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -95,6 +100,58 @@ export const CreateExpenseView: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [activeTemplate, setActiveTemplate] = useState<OcrTemplate | null>(null);
+
+  // Camera & WebCam Scanner States
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+
+  const startCamera = async () => {
+    setCameraError('');
+    setIsCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setCameraError('Unable to access camera. Please allow camera permissions or use the Take Photo option.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhotoFromCamera = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const capturedFile = new File([blob], `camera_receipt_${Date.now()}.png`, { type: 'image/png' });
+          stopCamera();
+          handleFileUpload(capturedFile);
+        }
+      }, 'image/png');
+    }
+  };
 
   const startOcrScan = (preset: OcrTemplate) => {
     setIsScanning(true);
@@ -482,12 +539,37 @@ export const CreateExpenseView: React.FC = () => {
         </div>
       </div>
 
-      {/* OCR Simulator Side Panel */}
+      {/* OCR Simulator & Receipt Upload Side Panel */}
       <div className="space-y-6">
+        {/* Hidden inputs for File & Camera Capture */}
+        <input
+          type="file"
+          id="receipt-file-uploader"
+          accept="image/*,application/pdf"
+          className="hidden"
+          onChange={e => {
+            if (e.target.files && e.target.files[0]) {
+              handleFileUpload(e.target.files[0]);
+            }
+          }}
+        />
+
+        <input
+          type="file"
+          id="camera-file-uploader"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={e => {
+            if (e.target.files && e.target.files[0]) {
+              handleFileUpload(e.target.files[0]);
+            }
+          }}
+        />
+
         {/* Receipt Drag & Drop Box */}
-        <label
-          htmlFor="receipt-file-uploader"
-          className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center border-dashed border-2 border-[#ffffff0a] text-center min-h-[220px] cursor-pointer hover:border-brand-purple-500/20 transition-all duration-200"
+        <div
+          className="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center border-dashed border-2 border-[#ffffff0a] text-center min-h-[220px] relative transition-all duration-200"
           onDragOver={e => e.preventDefault()}
           onDrop={e => {
             e.preventDefault();
@@ -496,45 +578,138 @@ export const CreateExpenseView: React.FC = () => {
             }
           }}
         >
-          <input
-            type="file"
-            id="receipt-file-uploader"
-            accept="image/*,application/pdf"
-            className="hidden"
-            onChange={e => {
-              if (e.target.files && e.target.files[0]) {
-                handleFileUpload(e.target.files[0]);
-              }
-            }}
-          />
           {isScanning ? (
             <div className="space-y-4 w-full flex flex-col items-center justify-center">
               <div className="relative w-16 h-16 rounded-full border-4 border-brand-purple-500/20 border-t-brand-purple-500 animate-spin flex items-center justify-center" />
               <div className="w-full max-w-[120px] bg-white/[0.05] h-1.5 rounded-full overflow-hidden">
                 <div className="bg-brand-purple-500 h-full transition-all" style={{ width: `${scanProgress}%` }} />
               </div>
-              <span className="text-[10px] text-brand-orange-400 font-bold tracking-widest uppercase">
+              <span className="text-[10px] text-brand-orange-400 font-bold tracking-widest uppercase font-sans">
                 AI SCANNING BEAM ({scanProgress}%)
               </span>
             </div>
           ) : (
-            <>
-              <div className="p-4 bg-brand-purple-500/10 rounded-2xl text-brand-purple-400 mb-4 animate-pulse">
-                <UploadCloud className="w-8 h-8" />
+            <div className="w-full space-y-4 flex flex-col items-center">
+              <div className="flex gap-3">
+                <div className="p-3 bg-brand-purple-500/10 rounded-2xl text-brand-purple-400 animate-pulse">
+                  <UploadCloud className="w-6 h-6" />
+                </div>
+                <div className="p-3 bg-[#00A3FF]/10 rounded-2xl text-[#00C8FF] animate-bounce">
+                  <Camera className="w-6 h-6" />
+                </div>
               </div>
-              <h3 className="text-xs font-bold text-white uppercase">Upload Receipt</h3>
-              <p className="text-[10px] text-gray-500 font-sans mt-2 leading-relaxed">
-                {receiptUrl ? (
-                  <span className="text-brand-purple-400 font-semibold truncate block max-w-[180px]">
-                    Verified: {receiptUrl.split('/').pop()?.slice(-20)}
-                  </span>
-                ) : (
-                  <>PNG, JPEG, PDF up to 10MB.<br />Click to upload or drag & drop file here.</>
-                )}
-              </p>
-            </>
+
+              <div>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-sans">Upload or Capture Receipt</h3>
+                <p className="text-[10px] text-gray-400 font-sans mt-1">
+                  {receiptUrl ? (
+                    <span className="text-[#00E0FF] font-bold truncate block max-w-[200px] mx-auto">
+                      ✓ Attached: {receiptUrl.split('/').pop()?.slice(-20)}
+                    </span>
+                  ) : (
+                    <>PNG, JPEG, PDF up to 10MB.<br />Choose an option below or drag & drop file here.</>
+                  )}
+                </p>
+              </div>
+
+              {/* Upload & Camera Action Buttons */}
+              <div className="grid grid-cols-2 gap-2.5 w-full pt-1">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('receipt-file-uploader')?.click()}
+                  className="py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white text-xs font-bold font-sans flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4 text-brand-purple-400" />
+                  <span>Browse File</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('camera-file-uploader')?.click()}
+                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#00A3FF]/20 to-[#00C8FF]/20 border border-[#00C8FF]/40 text-[#00C8FF] text-xs font-bold font-sans flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:bg-[#00C8FF]/30"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Take Photo</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={startCamera}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white text-xs font-extrabold uppercase tracking-wider font-sans flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all cursor-pointer"
+              >
+                <Video className="w-4 h-4" />
+                <span>Live WebCam Scanner</span>
+              </button>
+            </div>
           )}
-        </label>
+        </div>
+
+        {/* Live WebCam Camera Modal */}
+        {isCameraOpen && (
+          <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fadeIn">
+            <div className="w-full max-w-lg glass-panel rounded-3xl p-5 sm:p-6 border border-[#00C8FF]/30 space-y-4 relative shadow-[0_0_50px_rgba(0,163,255,0.3)] animate-scaleUp my-auto">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2 font-sans">
+                  <Camera className="w-4 h-4 text-[#00C8FF]" />
+                  Live Invoice & Receipt Camera
+                </h3>
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {cameraError ? (
+                <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl text-center font-sans space-y-3">
+                  <p>{cameraError}</p>
+                  <button
+                    type="button"
+                    onClick={() => { stopCamera(); document.getElementById('camera-file-uploader')?.click(); }}
+                    className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg text-xs font-bold uppercase tracking-wider"
+                  >
+                    Open Device Camera App
+                  </button>
+                </div>
+              ) : (
+                <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center border border-white/10 shadow-inner">
+                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  
+                  {/* Viewfinder reticle overlay */}
+                  <div className="absolute inset-5 border-2 border-dashed border-[#00C8FF]/60 rounded-xl pointer-events-none flex items-center justify-center">
+                    <span className="text-[10px] text-[#00C8FF] font-bold uppercase tracking-widest bg-black/70 px-3 py-1 rounded-full font-sans border border-[#00C8FF]/30">
+                      Align Receipt Inside Box
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <canvas ref={canvasRef} className="hidden" />
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="flex-1 py-3 rounded-xl border border-white/10 text-xs text-gray-300 font-bold uppercase tracking-wider font-sans hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={capturePhotoFromCamera}
+                  disabled={!!cameraError}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white text-xs font-extrabold uppercase tracking-wider font-sans flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,163,255,0.4)] transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Snap & Scan Receipt</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* OCR Presets */}
         <div className="glass-panel p-6 rounded-3xl space-y-4">
