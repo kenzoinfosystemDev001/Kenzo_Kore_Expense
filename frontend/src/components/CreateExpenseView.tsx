@@ -204,6 +204,8 @@ export const CreateExpenseView: React.FC = () => {
 
   const startCamera = () => {
     setIsCameraOpen(true);
+    // Initiate camera stream synchronously on click to preserve user gesture context for WebViews & PWA standalone mode
+    initCameraStream();
   };
 
   const cycleCamera = () => {
@@ -216,12 +218,7 @@ export const CreateExpenseView: React.FC = () => {
   };
 
   React.useEffect(() => {
-    if (isCameraOpen) {
-      const timer = setTimeout(() => {
-        initCameraStream();
-      }, 100);
-      return () => clearTimeout(timer);
-    } else {
+    if (!isCameraOpen) {
       stopCamera();
     }
   }, [isCameraOpen]);
