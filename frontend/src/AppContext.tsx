@@ -121,8 +121,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const prevStatuses = previousExpensesRef.current;
         const updatedStatuses: Record<string, string> = {};
 
-        const mappedExpenses = expensesData.map((e: any) => {
-          const statusMapped = e.status === 'DRAFT' ? 'Draft' 
+        const mappedExpenses: Expense[] = expensesData.map((e: any): Expense => {
+          const statusMapped: ExpenseStatus = e.status === 'DRAFT' ? 'Draft' 
             : e.status === 'SUBMITTED' ? 'Submitted' 
             : e.status === 'PENDING_MANAGER' ? 'Pending Manager' 
             : e.status === 'PENDING_FINANCE' ? 'Pending Finance' 
@@ -183,19 +183,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             employeeName: e.employee ? e.employee.name : (e.employeeName || 'Corporate Staff'),
             departmentId: e.departmentId,
             costCenterId: e.costCenterId,
-            category: e.category,
+            category: e.category || 'Other',
             amount: e.amount,
-            currency: e.currency,
+            currency: e.currency || 'USD',
             date: e.date ? e.date.split('T')[0] : '',
-            paymentMethod: e.paymentMethod,
+            paymentMethod: e.paymentMethod || 'UPI',
             status: statusMapped,
-            merchant: e.merchant,
-            businessPurpose: e.businessPurpose,
-            billable: e.billable,
-            location: e.location,
+            merchant: e.merchant || '',
+            businessPurpose: e.businessPurpose || '',
+            billable: e.billable || false,
+            location: e.location || '',
             description: e.description || '',
             receiptUrl: e.receiptUrl,
-            taxAmount: e.taxAmount,
+            taxAmount: e.taxAmount || 0,
             referenceNumber: e.referenceNumber,
             tags: e.tags || [],
             items: e.items || [],
@@ -203,7 +203,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             duplicateDetected: false,
             history: e.approvals?.map((a: any) => ({
               id: a.id,
-              status: a.status === 'APPROVED' ? 'Approved' : a.status === 'REJECTED' ? 'Rejected' : a.status === 'RETURNED' ? 'Returned' : 'Submitted',
+              status: (a.status === 'APPROVED' ? 'Approved' : a.status === 'REJECTED' ? 'Rejected' : a.status === 'RETURNED' ? 'Returned' : 'Submitted') as ExpenseStatus,
               updatedBy: 'Auditor',
               updatedAt: a.createdAt,
               comment: a.comment
