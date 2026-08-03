@@ -40,47 +40,19 @@ export class AuthController {
   // Login handler verifying against Neon PostgreSQL
   @Post('login')
   async login(@Body() body: { email: string; password?: string }) {
-    const cleanEmail = (body.email || 'sujal.kumar@kenzo.com').trim().toLowerCase();
+    if (!body.email || !body.email.trim()) {
+      throw new UnauthorizedException('Email address is required');
+    }
 
-    let user = await this.prisma.user.findFirst({
+    const cleanEmail = body.email.trim().toLowerCase();
+
+    const user = await this.prisma.user.findFirst({
       where: { email: { equals: cleanEmail, mode: 'insensitive' } }
     });
 
-    // Auto-create user if not yet seeded in Neon PostgreSQL so login never fails
+    // Strict Rule: ONLY emails registered in PostgreSQL database are allowed to enter
     if (!user) {
-      let dept = await this.prisma.department.findFirst();
-      if (!dept) {
-        dept = await this.prisma.department.create({
-          data: { id: 'dept_eng', name: 'Engineering', code: 'ENG', budgetLimit: 120000.0 }
-        });
-      }
-      let cc = await this.prisma.costCenter.findFirst();
-      if (!cc) {
-        cc = await this.prisma.costCenter.create({
-          data: { id: 'cc_dev', name: 'R&D Development', code: 'CC-001' }
-        });
-      }
-
-      const nameFromEmail = cleanEmail.split('@')[0].replace('.', ' ');
-      const capitalizedName = nameFromEmail
-        .split(' ')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-
-      const defaultHashedPassword = await bcrypt.hash(body.password || 'password123', 10);
-
-      user = await this.prisma.user.create({
-        data: {
-          email: cleanEmail,
-          password: defaultHashedPassword,
-          name: capitalizedName || 'Kenzo User',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
-          role: cleanEmail.includes('admin') ? 'ADMIN' : 'EMPLOYEE',
-          designation: 'Corporate Staff',
-          departmentId: dept.id,
-          costCenterId: cc.id
-        }
-      });
+      throw new UnauthorizedException('Access denied. This email is not registered in the system database. Please contact your administrator.');
     }
 
     // Verify password strictly against stored database credentials

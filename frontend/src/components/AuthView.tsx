@@ -20,16 +20,16 @@ export const AuthView: React.FC = () => {
     setError('');
 
     try {
-      const success = await login(email, password);
+      const res = await login(email, password);
       setLoading(false);
-      if (success) {
+      if (res.success) {
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 }
         });
       } else {
-        setError('Invalid email or password.');
+        setError(res.message || 'Access denied. Only registered emails are allowed.');
       }
     } catch (err) {
       setLoading(false);

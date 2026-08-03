@@ -15,7 +15,7 @@ interface AppContextProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
   switchUser: (userId: string) => void;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   signup: (userData: {
     name: string;
     email: string;
@@ -165,18 +165,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        return false;
+        return { success: false, message: data?.message || 'Access denied. Only registered emails are allowed to log in.' };
       }
-      const data = await res.json();
-      if (data.user && data.accessToken) {
+      if (data && data.user && data.accessToken) {
         setCurrentUser(data.user);
         setIsAuthenticated(true);
         localStorage.setItem('kenzo_kore_jwt', data.accessToken);
@@ -194,12 +194,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
         setAuditLogs(prev => [newLog, ...prev]);
         refreshData();
-        return true;
+        return { success: true };
       }
     } catch (err) {
       console.error('Login error: ', err);
+      return { success: false, message: 'Connection to corporate authentication service failed. Please check backend server.' };
     }
-    return false;
+    return { success: false, message: 'Invalid email or password credentials.' };
   };
 
   const signup = async (userData: {
