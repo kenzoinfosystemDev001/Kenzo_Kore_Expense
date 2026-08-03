@@ -77,7 +77,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(mockAuditLogs);
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
 
-  // Load active lists from Neon PostgreSQL on initialization
+  const previousExpensesRef = React.useRef<Record<string, string>>({});
+  const currentUserRef = React.useRef<User | null>(currentUser);
+
+  React.useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  const notifyRealtimeSync = () => {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('kenzo_kore_realtime_sync');
+        bc.postMessage({ type: 'DATA_UPDATED', timestamp: Date.now() });
+        bc.close();
+      } catch {}
+    }
+  };
+
+  // Load active lists from Neon PostgreSQL & run real-time approval detection
   const refreshData = async () => {
     try {
       const usersRes = await fetch(`${API_BASE_URL}/auth/users`);
@@ -101,8 +118,65 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const expensesRes = await fetch(`${API_BASE_URL}/expenses`);
       const expensesData = await expensesRes.json();
       if (Array.isArray(expensesData)) {
-        setExpenses(
-          expensesData.map((e: any) => ({
+        const prevStatuses = previousExpensesRef.current;
+        const updatedStatuses: Record<string, string> = {};
+
+        const mappedExpenses = expensesData.map((e: any) => {
+          const statusMapped = e.status === 'DRAFT' ? 'Draft' 
+            : e.status === 'SUBMITTED' ? 'Submitted' 
+            : e.status === 'PENDING_MANAGER' ? 'Pending Manager' 
+            : e.status === 'PENDING_FINANCE' ? 'Pending Finance' 
+            : e.status === 'APPROVED' ? 'Approved' 
+            : e.status === 'REJECTED' ? 'Rejected' 
+            : e.status === 'REIMBURSED' ? 'Reimbursed' 
+            : e.status === 'RETURNED' ? 'Returned' : 'Draft';
+
+          updatedStatuses[e.id] = statusMapped;
+
+          // REAL-TIME AUTO APPROVAL DETECTION:
+          // Check if this expense transitioned to Approved or Reimbursed for the active logged-in employee
+          const prevStatus = prevStatuses[e.id];
+          const activeUser = currentUserRef.current;
+
+          if (
+            prevStatus && 
+            prevStatus !== 'Approved' && 
+            prevStatus !== 'Reimbursed' && 
+            (statusMapped === 'Approved' || statusMapped === 'Reimbursed')
+          ) {
+            const empId = e.employeeId;
+            const empName = e.employee ? e.employee.name : (e.employeeName || '');
+
+            if (
+              activeUser && 
+              (empId === activeUser.id || (empName && activeUser.name && empName.toLowerCase() === activeUser.name.toLowerCase()))
+            ) {
+              const lastApproval = e.approvals && e.approvals.length > 0 ? e.approvals[e.approvals.length - 1] : null;
+              const comment = lastApproval?.comment || 'Verified & Approved';
+
+              const newPopup: ApprovedPopup = {
+                id: e.id + '_' + Date.now(),
+                expenseId: e.id,
+                employeeId: empId,
+                employeeName: empName || activeUser.name,
+                title: e.title,
+                description: e.businessPurpose || e.description || 'Expense claim verified and approved by Admin.',
+                category: e.category,
+                amount: e.amount,
+                comment: comment,
+                approvedAt: new Date().toISOString()
+              };
+
+              setApprovedPopups(prev => {
+                if (prev.some(p => p.expenseId === e.id)) return prev;
+                const updated = [newPopup, ...prev];
+                localStorage.setItem('kenzo_approved_popups', JSON.stringify(updated));
+                return updated;
+              });
+            }
+          }
+
+          return {
             id: e.id,
             title: e.title,
             employeeId: e.employeeId,
@@ -114,7 +188,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             currency: e.currency,
             date: e.date ? e.date.split('T')[0] : '',
             paymentMethod: e.paymentMethod,
-            status: e.status === 'DRAFT' ? 'Draft' : e.status === 'SUBMITTED' ? 'Submitted' : e.status === 'PENDING_MANAGER' ? 'Pending Manager' : e.status === 'PENDING_FINANCE' ? 'Pending Finance' : e.status === 'APPROVED' ? 'Approved' : e.status === 'REJECTED' ? 'Rejected' : e.status === 'REIMBURSED' ? 'Reimbursed' : e.status === 'RETURNED' ? 'Returned' : 'Draft',
+            status: statusMapped,
             merchant: e.merchant,
             businessPurpose: e.businessPurpose,
             billable: e.billable,
@@ -134,8 +208,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               updatedAt: a.createdAt,
               comment: a.comment
             })) || []
-          }))
-        );
+          };
+        });
+
+        previousExpensesRef.current = updatedStatuses;
+        setExpenses(mappedExpenses);
       }
     } catch (err) {
       console.error('Failed fetching data from Postgres: ', err);
@@ -163,6 +240,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       await refreshData();
     };
     initAuth();
+  }, []);
+
+  // Real-time automatic background syncing interval + cross-tab BroadcastChannel listener
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      refreshData();
+    }, 2000);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('kenzo_kore_realtime_sync');
+        bc.onmessage = (event) => {
+          if (event.data && event.data.type === 'DATA_UPDATED') {
+            refreshData();
+          }
+        };
+      } catch {}
+    }
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'kenzo_approved_popups' && e.newValue) {
+        try {
+          setApprovedPopups(JSON.parse(e.newValue));
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearInterval(syncInterval);
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
@@ -314,6 +425,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         body: JSON.stringify(payload)
       });
 
+      notifyRealtimeSync();
       await refreshData();
     } catch (err) {
       console.error('Create expense error: ', err);
@@ -343,34 +455,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (status === 'Returned') endpoint = 'return';
       if (status === 'Rejected') endpoint = 'reject';
 
-      // Record targeted employee popup when claim is approved
-      const exp = expenses.find(e => e.id === expenseId);
-      if (exp && (status === 'Approved' || status === 'Reimbursed')) {
-        const newPopup: ApprovedPopup = {
-          id: exp.id + '_' + Date.now(),
-          expenseId: exp.id,
-          employeeId: exp.employeeId,
-          employeeName: exp.employeeName,
-          title: exp.title,
-          description: exp.businessPurpose || exp.description || 'Expense claim verified and approved by Admin.',
-          category: exp.category,
-          amount: exp.amount,
-          comment: comment || 'Verified & Approved',
-          approvedAt: new Date().toISOString()
-        };
-        setApprovedPopups(prev => {
-          const updated = [newPopup, ...prev.filter(p => p.expenseId !== exp.id)];
-          localStorage.setItem('kenzo_approved_popups', JSON.stringify(updated));
-          return updated;
-        });
-      }
-
       await fetch(`${API_BASE_URL}/approvals/${expenseId}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ comment })
       });
 
+      notifyRealtimeSync();
       await refreshData();
     } catch (err) {
       console.error('Update status error: ', err);
@@ -384,6 +475,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expenseData)
       });
+      notifyRealtimeSync();
       await refreshData();
     } catch (err) {
       console.error('Update expense error: ', err);
@@ -395,6 +487,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
         method: 'DELETE'
       });
+      notifyRealtimeSync();
       await refreshData();
     } catch (err) {
       console.error('Delete expense error: ', err);

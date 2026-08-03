@@ -7,7 +7,10 @@ export const ApprovedExpenseModal: React.FC = () => {
   const { currentUser, approvedPopups, dismissApprovedPopup } = useApp();
 
   // Find the first approved popup for the currently logged-in user
-  const userPopup = approvedPopups.find(p => p.employeeId === currentUser?.id || p.employeeName === currentUser?.name);
+  const userPopup = approvedPopups.find(p => 
+    (currentUser?.id && p.employeeId === currentUser.id) || 
+    (currentUser?.name && p.employeeName && p.employeeName.toLowerCase() === currentUser.name.toLowerCase())
+  );
 
   useEffect(() => {
     if (userPopup) {
@@ -22,12 +25,12 @@ export const ApprovedExpenseModal: React.FC = () => {
   if (!userPopup) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto w-full h-full font-sans">
       {/* Glow background behind modal */}
-      <div className="absolute w-[450px] h-[450px] bg-[#00A3FF]/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute w-[350px] sm:w-[450px] h-[350px] sm:h-[450px] bg-[#00A3FF]/15 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Modal Container */}
-      <div className="w-full max-w-lg glass-panel rounded-3xl p-6 sm:p-8 border border-[#00C8FF]/30 shadow-[0_0_50px_rgba(0,163,255,0.25)] space-y-6 relative z-10 animate-scaleUp my-auto max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg glass-panel rounded-3xl p-5 sm:p-8 border border-[#00C8FF]/30 shadow-[0_0_50px_rgba(0,163,255,0.3)] space-y-5 sm:space-y-6 relative z-10 animate-scaleUp my-auto max-h-[92vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
