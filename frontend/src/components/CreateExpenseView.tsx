@@ -104,27 +104,72 @@ export const CreateExpenseView: React.FC = () => {
   // Camera & WebCam Scanner States
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
-  const startCamera = async () => {
+  const initCameraStream = async () => {
     setCameraError('');
-    setIsCameraOpen(true);
+    setIsCameraLoading(true);
+    let stream: MediaStream | null = null;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      // Attempt 1: Back camera / Environment facing mode
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
         audio: false
       });
+    } catch (e1) {
+      try {
+        // Attempt 2: Fallback to any default camera device (laptop webcam, front camera)
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      } catch (e2: any) {
+        console.error('Camera permissions / device error:', e2);
+        setIsCameraLoading(false);
+        if (e2.name === 'NotAllowedError' || e2.name === 'PermissionDeniedError') {
+          setCameraError('Camera permission blocked by browser. Please click the camera icon in your browser address bar and select "Allow".');
+        } else if (e2.name === 'NotFoundError' || e2.name === 'DevicesNotFoundError') {
+          setCameraError('No camera hardware detected on this device. Use "Browse File" to upload an image.');
+        } else {
+          setCameraError('Unable to open camera stream. Please ensure camera permissions are allowed.');
+        }
+        return;
+      }
+    }
+
+    if (stream) {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn('Video play error:', playErr);
+        }
       }
-    } catch (err) {
-      console.error('Camera access error:', err);
-      setCameraError('Unable to access camera. Please allow camera permissions or use the Take Photo option.');
     }
+    setIsCameraLoading(false);
   };
+
+  const startCamera = () => {
+    setIsCameraOpen(true);
+  };
+
+  React.useEffect(() => {
+    if (isCameraOpen) {
+      // Small timeout ensures video element is mounted in DOM
+      const timer = setTimeout(() => {
+        initCameraStream();
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      stopCamera();
+    }
+  }, [isCameraOpen]);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -132,24 +177,30 @@ export const CreateExpenseView: React.FC = () => {
       streamRef.current = null;
     }
     setIsCameraOpen(false);
+    setIsCameraLoading(false);
   };
 
   const capturePhotoFromCamera = () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
+    
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    canvas.width = width;
+    canvas.height = height;
+
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, width, height);
+      // Export strictly as Image format (JPEG)
       canvas.toBlob((blob) => {
         if (blob) {
-          const capturedFile = new File([blob], `camera_receipt_${Date.now()}.png`, { type: 'image/png' });
+          const capturedImageFile = new File([blob], `receipt_camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
           stopCamera();
-          handleFileUpload(capturedFile);
+          handleFileUpload(capturedImageFile);
         }
-      }, 'image/png');
+      }, 'image/jpeg', 0.92);
     }
   };
 
@@ -557,7 +608,7 @@ export const CreateExpenseView: React.FC = () => {
         <input
           type="file"
           id="camera-file-uploader"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/jpg,image/webp"
           capture="environment"
           className="hidden"
           onChange={e => {
@@ -652,7 +703,7 @@ export const CreateExpenseView: React.FC = () => {
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2 font-sans">
                   <Camera className="w-4 h-4 text-[#00C8FF]" />
-                  Live Invoice & Receipt Camera
+                  Live Receipt Camera Scanner (Image Only)
                 </h3>
                 <button
                   type="button"
@@ -663,25 +714,39 @@ export const CreateExpenseView: React.FC = () => {
                 </button>
               </div>
 
-              {cameraError ? (
+              {isCameraLoading ? (
+                <div className="p-8 flex flex-col items-center justify-center space-y-3 font-sans">
+                  <div className="w-10 h-10 border-2 border-[#00C8FF] border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-[#00C8FF] font-semibold">Requesting Camera Access... Please Allow Browser Permission</span>
+                </div>
+              ) : cameraError ? (
                 <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl text-center font-sans space-y-3">
                   <p>{cameraError}</p>
-                  <button
-                    type="button"
-                    onClick={() => { stopCamera(); document.getElementById('camera-file-uploader')?.click(); }}
-                    className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg text-xs font-bold uppercase tracking-wider"
-                  >
-                    Open Device Camera App
-                  </button>
+                  <div className="flex gap-2 justify-center pt-1">
+                    <button
+                      type="button"
+                      onClick={initCameraStream}
+                      className="px-3 py-2 bg-[#00C8FF]/20 hover:bg-[#00C8FF]/30 text-[#00C8FF] rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Retry Permission
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { stopCamera(); document.getElementById('camera-file-uploader')?.click(); }}
+                      className="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg text-xs font-bold uppercase tracking-wider"
+                    >
+                      Select Image File
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center border border-white/10 shadow-inner">
-                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
                   
                   {/* Viewfinder reticle overlay */}
                   <div className="absolute inset-5 border-2 border-dashed border-[#00C8FF]/60 rounded-xl pointer-events-none flex items-center justify-center">
                     <span className="text-[10px] text-[#00C8FF] font-bold uppercase tracking-widest bg-black/70 px-3 py-1 rounded-full font-sans border border-[#00C8FF]/30">
-                      Align Receipt Inside Box
+                      Align Receipt Inside Frame
                     </span>
                   </div>
                 </div>
@@ -700,11 +765,11 @@ export const CreateExpenseView: React.FC = () => {
                 <button
                   type="button"
                   onClick={capturePhotoFromCamera}
-                  disabled={!!cameraError}
+                  disabled={!!cameraError || isCameraLoading}
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white text-xs font-extrabold uppercase tracking-wider font-sans flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,163,255,0.4)] transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4" />
-                  <span>Snap & Scan Receipt</span>
+                  <span>Take Picture & Upload</span>
                 </button>
               </div>
             </div>
