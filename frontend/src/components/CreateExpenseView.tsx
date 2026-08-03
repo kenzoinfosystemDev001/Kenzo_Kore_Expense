@@ -159,14 +159,19 @@ export const CreateExpenseView: React.FC = () => {
     if (!stream) {
       console.error('Camera permissions / device error:', lastError);
       setIsCameraLoading(false);
+      const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
       if (lastError?.name === 'NotAllowedError' || lastError?.name === 'PermissionDeniedError') {
-        setCameraError('Camera permission blocked by browser. Please click the camera/lock icon in your browser address bar and select "Allow".');
+        setCameraError(
+          isMobileDevice
+            ? 'Camera permission is blocked or denied. Tap "Open Native Camera App" below to take a photo directly, or check app permissions in phone Settings.'
+            : 'Camera permission blocked by browser. Please click the camera/lock icon in your browser address bar and select "Allow".'
+        );
       } else if (lastError?.name === 'NotFoundError' || lastError?.name === 'DevicesNotFoundError') {
         setCameraError('No camera hardware detected on this device. Use "Browse File" to upload an image.');
       } else if (lastError?.name === 'NotReadableError' || lastError?.name === 'TrackStartError') {
         setCameraError('Camera hardware is currently in use by another application. Please close other camera apps and retry.');
       } else {
-        setCameraError('Unable to open camera stream. Please ensure camera permissions are allowed.');
+        setCameraError('Unable to open live stream. Tap "Open Native Camera App" below to capture a receipt photo.');
       }
       return;
     }
@@ -822,25 +827,37 @@ export const CreateExpenseView: React.FC = () => {
                 {cameraError && (
                   <div className="absolute inset-0 bg-black/95 p-5 border border-rose-500/30 text-rose-300 text-xs rounded-2xl flex flex-col items-center justify-center text-center font-sans space-y-3 z-10">
                     <AlertTriangle className="w-8 h-8 text-rose-400 mb-1" />
-                    <p className="max-w-xs text-rose-200">{cameraError}</p>
-                    <div className="flex gap-2 justify-center pt-2">
-                      <button
-                        type="button"
-                        onClick={() => initCameraStream()}
-                        className="px-3 py-2 bg-[#00C8FF]/20 hover:bg-[#00C8FF]/30 text-[#00C8FF] rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" /> Retry Permission
-                      </button>
+                    <p className="max-w-xs text-rose-200 leading-relaxed">{cameraError}</p>
+                    <div className="flex flex-col sm:flex-row gap-2.5 justify-center w-full max-w-sm pt-2">
                       <button
                         type="button"
                         onClick={() => {
                           stopCamera();
                           document.getElementById('camera-file-uploader')?.click();
                         }}
-                        className="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer"
+                        className="py-2.5 px-4 bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
                       >
-                        Select Image File
+                        <Camera className="w-4 h-4" /> Open Native Camera App
                       </button>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => initCameraStream()}
+                          className="flex-1 sm:flex-initial py-2.5 px-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Retry
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            stopCamera();
+                            document.getElementById('receipt-file-uploader')?.click();
+                          }}
+                          className="flex-1 sm:flex-initial py-2.5 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Browse File
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
