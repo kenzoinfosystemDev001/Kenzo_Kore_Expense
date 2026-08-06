@@ -58,7 +58,15 @@ export const ExpenseListView: React.FC = () => {
 
   const handleAction = (status: ExpenseStatus) => {
     if (!activeExpense) return;
-    updateExpenseStatus(activeExpense.id, status, adminComment);
+    let commentToUse = adminComment;
+
+    if ((status === 'Rejected' || status === 'Returned') && !adminComment.trim()) {
+      const reason = window.prompt(`Please enter the reason for ${status === 'Returned' ? 'returning' : 'rejecting'} this expense claim:`);
+      if (reason === null) return; // Cancelled
+      commentToUse = reason.trim() || `${status} by Admin ${currentUser.name}`;
+    }
+
+    updateExpenseStatus(activeExpense.id, status, commentToUse);
 
     if (status === 'Approved' || status === 'Reimbursed') {
       confetti({
@@ -79,7 +87,7 @@ export const ExpenseListView: React.FC = () => {
           status: status,
           updatedBy: currentUser.name,
           updatedAt: new Date().toISOString(),
-          comment: adminComment
+          comment: commentToUse
         }
       ]
     } : null);

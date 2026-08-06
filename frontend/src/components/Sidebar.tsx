@@ -48,7 +48,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
       shrink-0`}
     >
       {/* Brand Logo */}
-      <div className="p-5 flex items-center gap-3 border-b border-[#00C8FF]/15 overflow-hidden">
+      <div 
+        onClick={() => setCollapsed(true)}
+        className="p-5 flex items-center gap-3 border-b border-[#00C8FF]/15 overflow-hidden cursor-pointer"
+        title="Close menu"
+      >
         <KenzoLogo size={36} className="w-9 h-9" />
         {!collapsed && (
           <div className="flex flex-col">
@@ -70,7 +74,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentTab(item.id)}
+              onClick={() => {
+                setCurrentTab(item.id);
+                setCollapsed(true);
+              }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-200 group relative cursor-pointer ${
                 isActive
                   ? 'bg-gradient-to-r from-[#00A3FF]/20 via-[#00C8FF]/10 to-transparent border border-[#00C8FF]/30 text-white font-semibold shadow-[0_0_15px_rgba(0,163,255,0.15)]'
