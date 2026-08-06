@@ -60,6 +60,8 @@ interface AppContextProps {
   isPasswordModalOpen: boolean;
   openPasswordModal: () => void;
   closePasswordModal: () => void;
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -528,6 +530,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const openPasswordModal = () => setIsPasswordModalOpen(true);
   const closePasswordModal = () => setIsPasswordModalOpen(false);
 
+  // Theme Management (Dark / Light)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const savedTheme = localStorage.getItem('kenzo_theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      return savedTheme;
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.remove('dark');
+      root.classList.add('light');
+    }
+    localStorage.setItem('kenzo_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -560,7 +587,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dismissApprovedPopup,
         isPasswordModalOpen,
         openPasswordModal,
-        closePasswordModal
+        closePasswordModal,
+        theme,
+        toggleTheme
       }}
     >
       {children}

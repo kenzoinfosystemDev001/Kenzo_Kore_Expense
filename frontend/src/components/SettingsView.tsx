@@ -14,12 +14,14 @@ import {
   Info,
   UploadCloud,
   Lock,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser, openPasswordModal } = useApp();
+  const { policies, budgets, updatePolicy, users, signup, deleteUser, updateUserAvatar, currentUser, openPasswordModal, theme, toggleTheme } = useApp();
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -271,6 +273,72 @@ export const SettingsView: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </div>
+
+      {/* Theme & Visual Display Settings */}
+      <div className="glass-panel p-6 rounded-3xl space-y-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div>
+            <h3 className="text-sm font-extrabold text-white tracking-wider uppercase font-sans flex items-center gap-2">
+              <Sun className="w-4 h-4 text-[#00C8FF]" />
+              Theme & Visual Appearance
+            </h3>
+            <p className="text-xs text-gray-400 font-sans mt-1">
+              Customize interface display theme preference for Kenzo Kore Expense
+            </p>
+          </div>
+          <span className="text-xs px-3 py-1 rounded-full bg-[#00C8FF]/10 text-[#00C8FF] border border-[#00C8FF]/20 font-bold uppercase tracking-wider">
+            Active: {theme.toUpperCase()} MODE
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Dark Mode Option Card */}
+          <div
+            onClick={() => theme !== 'dark' && toggleTheme()}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-[#00A3FF]/20 to-[#00C8FF]/10 border-[#00C8FF] shadow-[0_0_20px_rgba(0,163,255,0.2)]'
+                : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-[#030712] border border-[#00C8FF]/30 rounded-xl text-amber-400">
+                <Moon className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">Dark Mode (Default)</h4>
+                <p className="text-[10px] text-gray-400 font-sans mt-0.5">High-contrast executive midnight aesthetic</p>
+              </div>
+            </div>
+            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme === 'dark' ? 'border-[#00C8FF] bg-[#00C8FF]' : 'border-gray-500'}`}>
+              {theme === 'dark' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+            </div>
+          </div>
+
+          {/* Light Mode Option Card */}
+          <div
+            onClick={() => theme !== 'light' && toggleTheme()}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+              theme === 'light'
+                ? 'bg-gradient-to-r from-[#00A3FF]/20 to-[#00C8FF]/10 border-[#00C8FF] shadow-[0_0_20px_rgba(0,163,255,0.2)]'
+                : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white border border-slate-300 rounded-xl text-indigo-600">
+                <Sun className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">Light Mode</h4>
+                <p className="text-[10px] text-gray-400 font-sans mt-0.5">Pristine daylight corporate view</p>
+              </div>
+            </div>
+            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme === 'light' ? 'border-[#00C8FF] bg-[#00C8FF]' : 'border-gray-500'}`}>
+              {theme === 'light' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+            </div>
           </div>
         </div>
       </div>

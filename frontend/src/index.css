@@ -4,10 +4,18 @@
 
 @layer base {
   body {
-    @apply bg-[#030712] text-[#F3F4F6] font-sans antialiased overflow-x-hidden selection:bg-[#00A3FF] selection:text-white;
+    @apply bg-[#030712] text-[#F3F4F6] font-sans antialiased overflow-x-hidden selection:bg-[#00A3FF] selection:text-white transition-colors duration-300;
     background-image: 
       radial-gradient(at 0% 0%, rgba(0, 163, 255, 0.08) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(0, 200, 255, 0.05) 0px, transparent 50%);
+  }
+
+  html:not(.dark) body,
+  html.light body {
+    @apply bg-[#F8FAFC] text-[#0F172A];
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(0, 163, 255, 0.06) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(0, 200, 255, 0.03) 0px, transparent 50%);
   }
 }
 
@@ -37,6 +45,16 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 200, 255, 0.12);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+html:not(.dark) .glass-panel,
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 163, 255, 0.2);
+  box-shadow: 0 10px 40px -10px rgba(0, 163, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .glass-panel-light {
@@ -51,12 +69,108 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(0, 200, 255, 0.08);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+html:not(.dark) .glass-card,
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .glass-card:hover {
   border-color: rgba(0, 200, 255, 0.3);
   background: rgba(11, 23, 42, 0.75);
   box-shadow: 0 8px 30px rgba(0, 163, 255, 0.1);
+}
+
+html:not(.dark) .glass-card:hover,
+html.light .glass-card:hover {
+  border-color: rgba(0, 163, 255, 0.4);
+  background: #FFFFFF;
+  box-shadow: 0 10px 30px rgba(0, 163, 255, 0.12);
+}
+
+/* Light Theme Typography & Element Overrides for Flawless Contrast */
+html:not(.dark) .text-white,
+html.light .text-white {
+  color: #0F172A;
+}
+
+html:not(.dark) .text-gray-400,
+html:not(.dark) .text-gray-300,
+html:not(.dark) .text-gray-500,
+html.light .text-gray-400,
+html.light .text-gray-300,
+html.light .text-gray-500 {
+  color: #475569;
+}
+
+/* Utility to ensure text inside dark buttons/badges remains crisp white in Light Mode */
+.keep-white,
+html:not(.dark) .keep-white,
+html.light .keep-white,
+html:not(.dark) .bg-gradient-to-r .text-white,
+html.light .bg-gradient-to-r .text-white,
+html:not(.dark) button.bg-brand-purple-500 .text-white,
+html.light button.bg-brand-purple-500 .text-white,
+html:not(.dark) .bg-emerald-500 .text-white,
+html.light .bg-emerald-500 .text-white,
+html:not(.dark) .bg-rose-500 .text-white,
+html.light .bg-rose-500 .text-white {
+  color: #FFFFFF !important;
+}
+
+/* Light Theme Input & Select Field Styling */
+html:not(.dark) input:not([type="checkbox"]),
+html:not(.dark) select,
+html:not(.dark) textarea,
+html.light input:not([type="checkbox"]),
+html.light select,
+html.light textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder,
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Light Theme Card & Container Overrides */
+html:not(.dark) .bg-\[\#030712\],
+html:not(.dark) .bg-\[\#090A0F\],
+html:not(.dark) .bg-\[\#0b172a\],
+html.light .bg-\[\#030712\],
+html.light .bg-\[\#090A0F\],
+html.light .bg-\[\#0b172a\] {
+  background-color: #F8FAFC !important;
+}
+
+html:not(.dark) .bg-\[\#030712\]\/60,
+html:not(.dark) .bg-white\/\[0\.02\],
+html:not(.dark) .bg-white\/\[0\.04\],
+html.light .bg-\[\#030712\]\/60,
+html.light .bg-white\/\[0\.02\],
+html.light .bg-white\/\[0\.04\] {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/\[0\.04\],
+html:not(.dark) .border-white\/\[0\.05\],
+html:not(.dark) .border-white\/\[0\.08\],
+html.light .border-white\/10,
+html.light .border-white\/\[0\.04\],
+html.light .border-white\/\[0\.05\],
+html.light .border-white\/\[0\.08\] {
+  border-color: #E2E8F0 !important;
 }
 
 /* Confetti overlay positioning */
@@ -104,5 +218,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 1 !important;
   border-radius: 4px;
   padding: 2px;
+}
+
+html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator,
+html.light input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.2) brightness(0.6) drop-shadow(0 0 2px #0077B6) !important;
 }
 

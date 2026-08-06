@@ -60,7 +60,7 @@ function App() {
   const showChatAssistant = currentTab === 'dashboard' || currentTab === 'analytics';
 
   return (
-    <div className="flex bg-[#030712] min-h-screen text-[#F3F4F6] font-sans selection:bg-[#00A3FF] selection:text-white relative">
+    <div className="flex min-h-screen font-sans selection:bg-[#00A3FF] selection:text-white relative transition-colors duration-300">
       {/* Global Root Modals */}
       <ApprovedExpenseModal />
       <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={closePasswordModal} />

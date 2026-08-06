@@ -8,7 +8,9 @@ import {
   Search,
   LogOut,
   UploadCloud,
-  Key
+  Key,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -17,7 +19,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
-  const { currentUser, expenses, logout, updateUserAvatar, openPasswordModal } = useApp();
+  const { currentUser, expenses, logout, updateUserAvatar, openPasswordModal, theme, toggleTheme } = useApp();
   const [showBellDropdown, setShowBellDropdown] = useState(false);
 
   const handleHeaderAvatarUpload = async (file: File) => {
@@ -172,6 +174,20 @@ export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
             </div>
           )}
         </div>
+
+        {/* Theme Switcher Toggle Button */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/[0.04] transition-all duration-300 relative cursor-pointer group flex items-center justify-center border border-white/5 hover:border-[#00C8FF]/30"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-500 group-hover:-rotate-12 transition-transform duration-300" />
+          )}
+        </button>
 
         {/* Change Password Button */}
         <button
