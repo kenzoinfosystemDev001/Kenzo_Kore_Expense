@@ -26,21 +26,21 @@ export class VerificationService {
   /**
    * Generate and store a secure verification challenge (OTP) for activation or password reset.
    */
-  async createChallenge(email: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<{ success: boolean; message: string; expiresInSeconds: number; devCode?: string }> {
+  async createChallenge(email: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<{ success: boolean; message: string; expiresInSeconds: number }> {
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Rate limiting: Check if an active challenge was issued in the last 60 seconds
+    // 1. Rate limiting: 5-second cooldown to prevent double clicks while allowing instant retries
     const recentChallenge = await this.prisma.verificationChallenge.findFirst({
       where: {
         email: cleanEmail,
         purpose,
-        createdAt: { gte: new Date(Date.now() - 60 * 1000) }
+        createdAt: { gte: new Date(Date.now() - 5 * 1000) }
       },
       orderBy: { createdAt: 'desc' }
     });
 
     if (recentChallenge) {
-      throw new BadRequestException('Please wait at least 60 seconds before requesting another verification code.');
+      throw new BadRequestException('Please wait a few seconds before requesting another verification code.');
     }
 
     // 2. Invalidate previous unused challenges for this email and purpose
@@ -71,10 +71,12 @@ export class VerificationService {
       }
     });
 
-    // 4. Dispatch Email via SMTP Transport (Gmail / Google Workspace SMTP)
-    const emailSent = await this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose);
+    // 4. Dispatch Email via Pooled SMTP Transport (Gmail / Google Workspace SMTP)
+    this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose).catch(err => {
+      this.logger.error(`Error sending email to ${cleanEmail}:`, err);
+    });
 
-    this.logger.log(`[VERIFICATION_DISPATCH] Generated 6-digit OTP challenge for ${cleanEmail} (purpose: ${purpose}, deliveredViaSmtp: ${emailSent}). Code: ${rawOtp}`);
+    this.logger.log(`[VERIFICATION_DISPATCH] 6-digit OTP generated and dispatched for ${cleanEmail} (purpose: ${purpose}). Code: ${rawOtp}`);
 
     return {
       success: true,

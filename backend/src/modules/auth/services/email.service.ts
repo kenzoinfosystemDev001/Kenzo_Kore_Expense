@@ -7,21 +7,27 @@ export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
-    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const port = parseInt(process.env.SMTP_PORT || '587', 10);
-    const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-    const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+    this.initTransporter();
+  }
+
+  private initTransporter() {
+    const user = process.env.SMTP_USER || process.env.GMAIL_USER || 'jitender.saini@kenzoinfosystems.com';
+    const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'keinawhijkwkhcjz').replace(/\s+/g, '');
 
     if (user && pass) {
       this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
+        service: 'gmail',
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 200,
         auth: { user, pass },
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 15000,
       });
-      this.logger.log(`SMTP Email Transport configured for: ${user} (${host}:${port})`);
+      this.logger.log(`Pooled Gmail SMTP Transport initialized for: ${user}`);
     } else {
-      this.logger.warn(`SMTP credentials not configured in .env. Verification codes will be recorded to server logs.`);
+      this.logger.warn(`SMTP credentials not configured. Verification codes will be recorded to server logs.`);
     }
   }
 
@@ -29,10 +35,14 @@ export class EmailService {
     const title = purpose === 'ACTIVATION' ? 'Account Activation Verification Code' : 'Password Reset Verification Code';
     const cleanEmail = to.trim().toLowerCase();
 
+    if (!this.transporter) {
+      this.initTransporter();
+    }
+
     if (this.transporter) {
       try {
         const mailOptions = {
-          from: process.env.SMTP_FROM || `"Kenzo InfoSystems Security" <${process.env.SMTP_USER || 'no-reply@kenzoinfosystems.com'}>`,
+          from: process.env.SMTP_FROM || `"Kenzo Kore Security" <jitender.saini@kenzoinfosystems.com>`,
           to: cleanEmail,
           subject: `[Kenzo Kore Expense] ${title}: ${otp}`,
           html: `
@@ -44,7 +54,7 @@ export class EmailService {
               <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; text-align: center;">
                 <h3 style="color: #ffffff; font-size: 16px; margin-top: 0;">${title}</h3>
                 <p style="color: #d1d5db; font-size: 13px; line-height: 1.5;">
-                  Your single-use 6-digit verification challenge for Kenzo Kore Expense is:
+                  Your single-use 6-digit verification code for Kenzo Kore Expense is:
                 </p>
                 <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #00E0FF; background: #090A0F; padding: 15px 25px; border-radius: 8px; display: inline-block; margin: 15px 0; border: 1px solid #00C8FF44;">
                   ${otp}
