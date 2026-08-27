@@ -1,5 +1,18 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/v1/expenses')
 export class ExpensesController {
@@ -11,22 +24,24 @@ export class ExpensesController {
       include: {
         employee: true,
         items: true,
-        approvals: true
+        approvals: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   @Post()
-  async createExpense(@Body() body: any) {
+  @UseGuards(JwtAuthGuard)
+  async createExpense(@Body() body: any, @Req() req: any) {
     const status = body.isDraft ? 'DRAFT' : 'SUBMITTED';
-    
+    const user = req.user;
+
     const newExpense = await this.prisma.expense.create({
       data: {
         title: body.title,
-        employeeId: body.employeeId || 'emp_1',
-        departmentId: body.departmentId || 'dept_eng',
-        costCenterId: body.costCenterId || 'cc_dev',
+        employeeId: user.id,
+        departmentId: user.departmentId || body.departmentId || 'dept_eng',
+        costCenterId: user.costCenterId || body.costCenterId || 'cc_dev',
         category: body.category,
         amount: parseFloat(body.amount),
         currency: body.currency || 'USD',
@@ -45,23 +60,32 @@ export class ExpensesController {
             description: item.description || '',
             amount: parseFloat(item.amount) || 0.0,
             taxAmount: parseFloat(item.taxAmount) || 0.0,
-            category: item.category || body.category
-          })) || []
-        }
+            category: item.category || body.category,
+          })) || [],
+        },
       },
       include: {
-        items: true
-      }
+        items: true,
+        employee: true,
+      },
     });
 
     return {
       message: 'Expense created in Neon database',
-      expense: newExpense
+      expense: newExpense,
     };
   }
 
   @Put(':id')
-  async updateExpense(@Param('id') id: string, @Body() body: any) {
+  @UseGuards(JwtAuthGuard)
+  async updateExpense(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const expense = await this.prisma.expense.findUnique({ where: { id } });
+    if (!expense) throw new NotFoundException('Expense not found');
+
+    if (expense.employeeId !== req.user.id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Not authorized to edit this expense');
+    }
+
     // Drop old items
     await this.prisma.expenseItem.deleteMany({ where: { expenseId: id } });
 
@@ -86,30 +110,39 @@ export class ExpensesController {
             description: item.description,
             amount: parseFloat(item.amount),
             taxAmount: parseFloat(item.taxAmount),
-            category: item.category || body.category
-          })) || []
-        }
+            category: item.category || body.category,
+          })) || [],
+        },
       },
       include: {
-        items: true
-      }
+        items: true,
+        employee: true,
+      },
     });
 
     return {
       message: 'Expense updated in Postgres database',
-      expense: updated
+      expense: updated,
     };
   }
 
   @Delete(':id')
-  async deleteExpense(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard)
+  async deleteExpense(@Param('id') id: string, @Req() req: any) {
+    const expense = await this.prisma.expense.findUnique({ where: { id } });
+    if (!expense) throw new NotFoundException('Expense not found');
+
+    if (expense.employeeId !== req.user.id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Not authorized to delete this expense');
+    }
+
     await this.prisma.expenseItem.deleteMany({ where: { expenseId: id } });
     await this.prisma.expenseApproval.deleteMany({ where: { expenseId: id } });
     await this.prisma.reimbursement.deleteMany({ where: { expenseId: id } });
     await this.prisma.expenseTag.deleteMany({ where: { expenseId: id } });
-    
+
     await this.prisma.expense.delete({
-      where: { id }
+      where: { id },
     });
 
     return {

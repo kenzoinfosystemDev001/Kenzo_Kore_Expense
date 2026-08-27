@@ -36,31 +36,120 @@ enum PaymentMethod {
   CORPORATE_CARD
 }
 
+enum DirectorySource {
+  GOOGLE_WORKSPACE
+  SCIM
+  MANUAL_SYNC
+  INTERNAL_DIRECTORY
+}
+
+enum IdentityStatus {
+  ACTIVE
+  SUSPENDED
+  DEPROVISIONED
+  PENDING
+}
+
+enum UserAccountStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum ChallengePurpose {
+  ACTIVATION
+  PASSWORD_RESET
+}
+
+// Master Employee Identity synchronized from Google Workspace / SCIM 2.0
+model EmployeeIdentity {
+  id                  String          @id @default(uuid())
+  externalDirectoryId String          @unique // Stable Google/SCIM identifier
+  employeeId          String?         // Company Employee ID
+  primaryEmail        String          @unique
+  secondaryEmail      String?
+  firstName           String
+  lastName            String
+  displayName         String
+  jobTitle            String?
+  department          String?
+  costCenter          String?
+  status              IdentityStatus  @default(ACTIVE)
+  source              DirectorySource @default(GOOGLE_WORKSPACE)
+  metadata            String?         // JSON directory metadata
+  lastSyncedAt        DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  user                User?
+
+  @@index([primaryEmail])
+  @@index([externalDirectoryId])
+  @@map("employee_identities")
+}
+
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  password       String?         @default("password123")
-  name           String
-  avatar         String?
-  role           Role            @default(EMPLOYEE)
-  designation    String
-  departmentId   String
-  department     Department      @relation(fields: [departmentId], references: [id])
-  managerId      String?
-  manager        User?           @relation("ManagerEmployees", fields: [managerId], references: [id])
-  employees      User[]          @relation("ManagerEmployees")
-  costCenterId   String
-  costCenter     CostCenter      @relation(fields: [costCenterId], references: [id])
-  joiningDate    DateTime        @default(now())
-  gstNumber      String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  expenses       Expense[]
-  auditLogs      AuditLog[]
-  approvals      ExpenseApproval[]
-  notifications  Notification[]
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  passwordHash       String?
+  name               String
+  avatar             String?
+  role               Role               @default(EMPLOYEE)
+  status             UserAccountStatus  @default(ACTIVE)
+  designation        String
+  departmentId       String
+  department         Department         @relation(fields: [departmentId], references: [id])
+  managerId          String?
+  manager            User?              @relation("ManagerEmployees", fields: [managerId], references: [id])
+  employees          User[]             @relation("ManagerEmployees")
+  costCenterId       String
+  costCenter         CostCenter         @relation(fields: [costCenterId], references: [id])
+  joiningDate        DateTime           @default(now())
+  gstNumber          String?
+  employeeIdentityId String?            @unique
+  employeeIdentity   EmployeeIdentity?  @relation(fields: [employeeIdentityId], references: [id])
+  emailVerifiedAt    DateTime?
+  activatedAt        DateTime?
+  lastLoginAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  expenses           Expense[]
+  auditLogs          AuditLog[]
+  approvals          ExpenseApproval[]
+  notifications      Notification[]
 
   @@map("users")
+}
+
+model VerificationChallenge {
+  id          String           @id @default(uuid())
+  email       String
+  codeHash    String
+  purpose     ChallengePurpose @default(ACTIVATION)
+  attempts    Int              @default(0)
+  maxAttempts Int              @default(5)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([email, purpose])
+  @@map("verification_challenges")
+}
+
+model UserSession {
+  id           String    @id @default(uuid())
+  userId       String
+  refreshToken String    @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  isRevoked    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("user_sessions")
 }
 
 model Department {
