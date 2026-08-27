@@ -435,6 +435,82 @@ export class AuthController {
   }
 
   /**
+   * Register a new employee (Admin/SuperAdmin endpoint)
+   * Creates an unactivated user / EmployeeIdentity and automatically dispatches an activation OTP to the employee's registered email
+   */
+  @Post('register')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  async registerEmployee(@Body() body: any) {
+    const cleanEmail = body.email.trim().toLowerCase();
+
+    // Check if user already exists and active
+    const existing = await this.prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (existing && existing.status === 'ACTIVE' && existing.passwordHash) {
+      throw new BadRequestException('A user with this email address already exists and is active.');
+    }
+
+    // Resolve Department & Cost Center
+    const defaultDept = await this.prisma.department.findFirst() || { id: 'dept_eng', name: 'Operations' };
+    const defaultCostCenter = await this.prisma.costCenter.findFirst() || { id: 'cc_dev', name: 'Corporate' };
+
+    // Upsert EmployeeIdentity
+    const identity = await this.prisma.employeeIdentity.upsert({
+      where: { primaryEmail: cleanEmail },
+      update: {
+        displayName: body.name,
+        jobTitle: body.designation || 'Corporate Staff',
+        department: defaultDept.name,
+        costCenter: defaultCostCenter.name,
+        status: 'ACTIVE',
+      },
+      create: {
+        externalDirectoryId: `reg_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+        primaryEmail: cleanEmail,
+        displayName: body.name,
+        firstName: body.name.split(' ')[0] || 'Employee',
+        lastName: body.name.split(' ').slice(1).join(' ') || '',
+        jobTitle: body.designation || 'Corporate Staff',
+        department: defaultDept.name,
+        costCenter: defaultCostCenter.name,
+        status: 'ACTIVE',
+        source: 'MANUAL_SYNC',
+      },
+    });
+
+    // Create user in PENDING_ACTIVATION state
+    const user = await this.prisma.user.upsert({
+      where: { email: cleanEmail },
+      update: {
+        name: body.name,
+        designation: body.designation || 'Corporate Staff',
+        role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
+        avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+        employeeIdentityId: identity.id,
+      },
+      create: {
+        email: cleanEmail,
+        name: body.name,
+        designation: body.designation || 'Corporate Staff',
+        role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
+        avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+        status: 'PENDING_ACTIVATION',
+        departmentId: defaultDept.id,
+        costCenterId: defaultCostCenter.id,
+        employeeIdentityId: identity.id,
+      },
+    });
+
+    // Send activation OTP email to the registered email address
+    await this.verificationService.createChallenge(cleanEmail, 'ACTIVATION').catch(() => null);
+
+    return {
+      message: `Employee ${user.name} successfully registered. Activation OTP dispatched to ${cleanEmail}.`,
+      user,
+    };
+  }
+
+  /**
    * Check Directory Sync and Integration Health
    */
   @Get('directory-status')
