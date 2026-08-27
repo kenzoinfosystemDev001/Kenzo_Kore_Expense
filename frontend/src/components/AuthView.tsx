@@ -444,7 +444,7 @@ export const AuthView: React.FC = () => {
                       type="email"
                       value={activationEmail}
                       onChange={e => setActivationEmail(e.target.value)}
-                      placeholder="e.g. priya.sharma@kenzoinfosystems.com"
+                      placeholder="Enter the Company Mail"
                       className="bg-transparent border-none text-xs w-full text-white placeholder-gray-500 font-sans focus:ring-0"
                       required
                     />
