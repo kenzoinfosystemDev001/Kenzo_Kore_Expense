@@ -10,16 +10,15 @@ export class GoogleDirectoryProvider implements IIdentityProvider {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Look up employee identity from authoritative Google Cloud Identity / Workspace SCIM Directory.
-   * Directly queries the live Google Cloud Identity SCIM 2.0 API in real-time.
-   * If not explicitly listed in SCIM but belongs to company domain, dynamically registers them.
+   * Look up employee identity STRICTLY from authoritative Google Cloud Identity / Workspace SCIM Directory.
+   * Only returns an employee if Google Cloud Identity verifies totalResults === 1.
    */
   async lookupByEmail(email: string): Promise<DirectoryEmployee | null> {
     const cleanEmail = email.trim().toLowerCase();
     const scimBaseUrl = process.env.GOOGLE_SCIM_BASE_URL;
     const scimApiKey = process.env.GOOGLE_SCIM_API_KEY;
 
-    // 1. Check live Google Cloud Identity SCIM 2.0 Directory
+    // 1. Query live Google Cloud Identity SCIM 2.0 Directory (Authoritative Source)
     if (scimBaseUrl && scimApiKey) {
       try {
         const filterQuery = encodeURIComponent(`userName eq "${cleanEmail}"`);
@@ -37,6 +36,7 @@ export class GoogleDirectoryProvider implements IIdentityProvider {
 
         if (response.ok) {
           const data: any = await response.json();
+          // STRICT CHECK: Must exist in Google Workspace SCIM
           if (data && data.resources && data.resources.length > 0) {
             const googleUser = data.resources[0];
             const googleId = googleUser.id || `goog_${Date.now()}`;
@@ -92,6 +92,10 @@ export class GoogleDirectoryProvider implements IIdentityProvider {
               source: synchronizedRecord.source as any,
               metadata: googleUser,
             };
+          } else {
+            // Google Cloud Identity returned 0 results -> Employee DOES NOT exist!
+            this.logger.warn(`Google SCIM verification rejected: "${cleanEmail}" does not exist in Google Cloud Identity.`);
+            return null;
           }
         }
       } catch (err) {
@@ -99,13 +103,13 @@ export class GoogleDirectoryProvider implements IIdentityProvider {
       }
     }
 
-    // 2. Check local PostgreSQL EmployeeIdentity table
+    // 2. Strict Fallback: Only allow pre-existing verified Google Workspace records
     const localRecord = await this.prisma.employeeIdentity.findUnique({
       where: { primaryEmail: cleanEmail },
       include: { user: true },
     });
 
-    if (localRecord) {
+    if (localRecord && localRecord.source === 'GOOGLE_WORKSPACE') {
       return {
         externalDirectoryId: localRecord.externalDirectoryId,
         employeeId: localRecord.employeeId || undefined,
@@ -123,59 +127,7 @@ export class GoogleDirectoryProvider implements IIdentityProvider {
       };
     }
 
-    // 3. Dynamic Corporate Domain Support:
-    // Allow any corporate email (@kenzoinfosystems.com, @kenzoinfosystem.com, or configured domain)
-    const emailParts = cleanEmail.split('@');
-    const domain = emailParts[1];
-    const isCompanyDomain = domain && (
-      domain.includes('kenzoinfosystem') ||
-      domain.includes('kenzo') ||
-      domain === 'gmail.com' // Allow testing accounts if applicable
-    );
-
-    if (isCompanyDomain) {
-      const namePart = emailParts[0].replace(/[._-]/g, ' ');
-      const formattedName = namePart
-        .split(' ')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-
-      const autoCreated = await this.prisma.employeeIdentity.upsert({
-        where: { primaryEmail: cleanEmail },
-        update: {
-          status: 'ACTIVE',
-          lastSyncedAt: new Date(),
-        },
-        create: {
-          externalDirectoryId: `dir_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-          primaryEmail: cleanEmail,
-          firstName: formattedName.split(' ')[0] || 'Employee',
-          lastName: formattedName.split(' ').slice(1).join(' ') || '',
-          displayName: formattedName,
-          jobTitle: 'Corporate Team Member',
-          department: 'Operations',
-          costCenter: 'Corporate',
-          status: 'ACTIVE',
-          source: 'GOOGLE_WORKSPACE',
-          lastSyncedAt: new Date(),
-        },
-      });
-
-      return {
-        externalDirectoryId: autoCreated.externalDirectoryId,
-        primaryEmail: autoCreated.primaryEmail,
-        firstName: autoCreated.firstName,
-        lastName: autoCreated.lastName,
-        displayName: autoCreated.displayName,
-        jobTitle: autoCreated.jobTitle || 'Corporate Team Member',
-        department: autoCreated.department || 'Operations',
-        costCenter: autoCreated.costCenter || 'Corporate',
-        status: 'ACTIVE',
-        source: 'GOOGLE_WORKSPACE',
-      };
-    }
-
-    this.logger.warn(`Master Directory lookup: email "${cleanEmail}" not recognized.`);
+    this.logger.warn(`Master Directory lookup: email "${cleanEmail}" NOT found in Google Workspace directory.`);
     return null;
   }
 
