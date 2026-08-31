@@ -20,8 +20,8 @@ export class ExpensesController {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Get Expenses scoped to user role:
-   * - EMPLOYEE: sees only their own expense claims
+   * Get Expenses scoped strictly to user role:
+   * - EMPLOYEE: sees only their own expense claims (NO ACCESS to other employees' claims)
    * - ADMIN / SUPER_ADMIN: sees all enterprise expense claims
    */
   @Get()
@@ -40,6 +40,32 @@ export class ExpensesController {
     });
   }
 
+  /**
+   * Get Single Expense by ID with strict IDOR protection:
+   * Employee A cannot view Employee B's expense by altering the ID in the URL.
+   */
+  @Get(':id')
+  async getExpenseById(@Param('id') id: string, @Req() req: any) {
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
+      include: {
+        employee: true,
+        items: true,
+        approvals: true,
+      },
+    });
+
+    if (!expense) {
+      throw new NotFoundException('Expense claim not found');
+    }
+
+    if (expense.employeeId !== req.user.id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Access denied: You do not have permission to view another employee expense claim.');
+    }
+
+    return expense;
+  }
+
   @Post()
   async createExpense(@Body() body: any, @Req() req: any) {
     const status = body.isDraft ? 'DRAFT' : 'SUBMITTED';
@@ -48,7 +74,7 @@ export class ExpensesController {
     const newExpense = await this.prisma.expense.create({
       data: {
         title: body.title,
-        employeeId: user.id,
+        employeeId: user.id, // Strictly tied to authenticated user
         departmentId: user.departmentId || body.departmentId || 'dept_eng',
         costCenterId: user.costCenterId || body.costCenterId || 'cc_dev',
         category: body.category,
@@ -90,8 +116,14 @@ export class ExpensesController {
     const expense = await this.prisma.expense.findUnique({ where: { id } });
     if (!expense) throw new NotFoundException('Expense not found');
 
+    // Strict Ownership & Permission Enforcement
     if (expense.employeeId !== req.user.id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Not authorized to edit this expense');
+      throw new ForbiddenException('Access denied: You are not authorized to edit another employee expense claim.');
+    }
+
+    // Do not allow editing if already approved or reimbursed
+    if (expense.status === 'APPROVED' || expense.status === 'REIMBURSED') {
+      throw new ForbiddenException('Cannot modify an expense claim that has already been approved or reimbursed.');
     }
 
     // Drop old items and recreate
@@ -112,7 +144,7 @@ export class ExpensesController {
         receiptUrl: body.receiptUrl,
         taxAmount: parseFloat(body.taxAmount) || 0.0,
         referenceNumber: body.referenceNumber,
-        status: body.status,
+        status: body.status || expense.status,
         items: {
           create: body.items?.map((item: any) => ({
             description: item.description,
@@ -139,8 +171,14 @@ export class ExpensesController {
     const expense = await this.prisma.expense.findUnique({ where: { id } });
     if (!expense) throw new NotFoundException('Expense not found');
 
+    // Strict Ownership & Permission Enforcement
     if (expense.employeeId !== req.user.id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Not authorized to delete this expense');
+      throw new ForbiddenException('Access denied: You are not authorized to delete another employee expense claim.');
+    }
+
+    // Do not allow deleting approved or reimbursed claims
+    if (expense.status === 'APPROVED' || expense.status === 'REIMBURSED') {
+      throw new ForbiddenException('Cannot delete an expense claim that has already been approved or reimbursed.');
     }
 
     await this.prisma.expenseItem.deleteMany({ where: { expenseId: id } });
