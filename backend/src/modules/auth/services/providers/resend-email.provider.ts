@@ -60,7 +60,7 @@ export class ResendEmailProvider implements IEmailProvider {
       } else {
         const errorText = await response.text().catch(() => 'Unknown API Error');
         const safeCode = `HTTP_${response.status}`;
-        this.logger.error(`[EmailService] OTP dispatch failed provider=resend errorCode=${safeCode}`);
+        this.logger.error(`[EmailService] OTP dispatch failed provider=resend errorCode=${safeCode} reason=${errorText}`);
         return { success: false, error: errorText, statusCode: response.status };
       }
     } catch (err: any) {
