@@ -72,7 +72,9 @@ export class VerificationService {
       }
     });
 
-    // 4. Dispatch Email via SMTP Transport
+    this.logger.log(`[VerificationService] OTP created for email: ${cleanEmail}`);
+
+    // 4. Dispatch Email via Active Provider (Resend HTTPS :443)
     const emailDelivered = await this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose);
 
     if (!emailDelivered) {
@@ -81,13 +83,13 @@ export class VerificationService {
         where: { id: challengeRecord.id },
       }).catch(() => null);
 
-      this.logger.error(`[VERIFICATION_DISPATCH_FAILED] Could not deliver OTP email to ${cleanEmail}`);
+      this.logger.error(`[VerificationService] OTP dispatch failed for email: ${cleanEmail}`);
       throw new InternalServerErrorException(
         'We verified your company account, but we could not send the verification email. Please try again shortly.'
       );
     }
 
-    this.logger.log(`[VERIFICATION_DISPATCH] 6-digit OTP challenge successfully dispatched to ${cleanEmail} (purpose: ${purpose})`);
+    this.logger.log(`[VerificationService] OTP dispatch successful for recipient: ${cleanEmail}`);
 
     return {
       success: true,

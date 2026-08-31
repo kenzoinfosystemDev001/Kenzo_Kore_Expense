@@ -28,8 +28,8 @@ export class ResendEmailProvider implements IEmailProvider {
       process.env.RESEND_FROM ||
       'Kenzo Kore Security <onboarding@resend.dev>';
 
-    this.logger.log(`[EmailService] Provider=resend`);
-    this.logger.log(`[EmailService] OTP dispatch started for recipient=${options.to.split('@')[0]}@***`);
+    this.logger.log('[EmailService] Provider=resend');
+    this.logger.log('[EmailService] HTTPS email dispatch started');
 
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${apiKey.trim()}`,
@@ -55,7 +55,7 @@ export class ResendEmailProvider implements IEmailProvider {
 
       if (response.ok) {
         const data: any = await response.json();
-        this.logger.log(`[EmailService] OTP dispatch accepted (messageId: ${data?.id || 'OK'})`);
+        this.logger.log(`[EmailService] Email accepted by provider (MessageId: ${data?.id || 'OK'})`);
         return { success: true, messageId: data?.id, statusCode: response.status };
       } else {
         const errorText = await response.text().catch(() => 'Unknown API Error');
