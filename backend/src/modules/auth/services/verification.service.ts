@@ -83,7 +83,7 @@ export class VerificationService {
 
       this.logger.error(`[VERIFICATION_DISPATCH_FAILED] Could not deliver OTP email to ${cleanEmail}`);
       throw new InternalServerErrorException(
-        'Failed to deliver the verification code to your corporate email. Please try again or contact IT support.'
+        'We verified your company account, but we could not send the verification email. Please try again shortly.'
       );
     }
 
