@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { ResendEmailProvider } from './providers/resend-email.provider';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
-import { SendOtpEmailOptions } from '../interfaces/email-provider.interface';
+import { SendOtpEmailOptions, EmailProviderHealth } from '../interfaces/email-provider.interface';
 
 @Injectable()
 export class EmailService {
@@ -13,15 +14,15 @@ export class EmailService {
   ) {
     const provider = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
     if (provider === 'resend' || process.env.RESEND_API_KEY) {
-      this.logger.log('Active Email Delivery Engine: Resend HTTPS REST API (Port 443)');
+      this.logger.log('[EmailService] Active Email Delivery Engine: Resend HTTPS REST API (Port 443)');
     } else {
-      this.logger.warn('Active Email Delivery Engine: Local SMTP (Development Only)');
+      this.logger.warn('[EmailService] Active Email Delivery Engine: Local SMTP (Development Only)');
     }
   }
 
   /**
    * Primary OTP dispatch method:
-   * Sends branded 6-digit challenge to recipient corporate inbox via HTTPS :443.
+   * Dispatches single-use 6-digit challenge via Resend HTTPS :443 with safe logs and controlled retries.
    * Returns true on SUCCESS, false on FAILURE.
    */
   async sendOtpEmail(options: SendOtpEmailOptions): Promise<boolean> {
@@ -54,40 +55,57 @@ export class EmailService {
       </div>
     `;
 
+    // Generate unique idempotency key for this challenge to prevent duplicate emails on retries
+    const idempotencyKey = crypto
+      .createHash('sha256')
+      .update(`${cleanEmail}:${purpose}:${otp}`)
+      .digest('hex');
+
     const providerType = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 
-    // Production Path: Resend HTTPS API (Port 443)
+    // 1. Production Path: Resend HTTPS API (Port 443)
     if (providerType === 'resend' || process.env.RESEND_API_KEY) {
+      // Attempt 1
       const resendResult = await this.resendProvider.sendEmail({
         to: cleanEmail,
         subject,
         html,
+        idempotencyKey,
       });
 
       if (resendResult.success) {
-        this.logger.log(`[RESEND_HTTPS_DELIVERY_SUCCESS] Dispatched verification code to ${cleanEmail}`);
         return true;
       }
 
-      this.logger.error(`[RESEND_HTTPS_DELIVERY_FAILED] Resend API rejected email for ${cleanEmail}: ${resendResult.error}`);
-      return false;
+      // If permanent 4xx client error (e.g. invalid domain, unauthorized), do NOT retry
+      if (resendResult.statusCode && resendResult.statusCode >= 400 && resendResult.statusCode < 500) {
+        this.logger.error(`[EmailService] Non-retryable client error (${resendResult.statusCode}). Aborting dispatch.`);
+        return false;
+      }
+
+      // Controlled Retry: Single retry after 1000ms for transient 5xx / network errors
+      this.logger.warn(`[EmailService] Transient issue encountered. Executing single controlled retry...`);
+      await new Promise((res) => setTimeout(res, 1000));
+
+      const retryResult = await this.resendProvider.sendEmail({
+        to: cleanEmail,
+        subject,
+        html,
+        idempotencyKey,
+      });
+
+      return retryResult.success;
     }
 
-    // Local Development Path: SMTP (Only used if EMAIL_PROVIDER=smtp is explicitly set)
-    this.logger.warn(`Dispatching via local SMTP for ${cleanEmail}...`);
+    // 2. Local Development Fallback: SMTP (Only when EMAIL_PROVIDER=smtp is configured)
+    this.logger.warn(`[EmailService] Dispatching via local SMTP fallback for recipient=${cleanEmail.split('@')[0]}@***`);
     const smtpResult = await this.smtpProvider.sendEmail({
       to: cleanEmail,
       subject,
       html,
     });
 
-    if (smtpResult.success) {
-      this.logger.log(`[SMTP_DELIVERY_SUCCESS] Dispatched verification code to ${cleanEmail}`);
-      return true;
-    }
-
-    this.logger.error(`[SMTP_DELIVERY_FAILED] SMTP transmission failed for ${cleanEmail}: ${smtpResult.error}`);
-    return false;
+    return smtpResult.success;
   }
 
   /**
@@ -95,5 +113,16 @@ export class EmailService {
    */
   async sendVerificationOtp(to: string, otp: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<boolean> {
     return this.sendOtpEmail({ recipient: to, otp, purpose });
+  }
+
+  /**
+   * Safe Health Check for Email Delivery Subsystem
+   */
+  async checkHealth(): Promise<EmailProviderHealth> {
+    const providerType = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
+    if (providerType === 'resend' || process.env.RESEND_API_KEY) {
+      return this.resendProvider.checkHealth();
+    }
+    return this.smtpProvider.checkHealth();
   }
 }

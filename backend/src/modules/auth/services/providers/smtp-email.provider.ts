@@ -1,11 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { IEmailProvider, SendEmailOptions, EmailDispatchResult } from '../../interfaces/email-provider.interface';
+import {
+  IEmailProvider,
+  SendEmailOptions,
+  EmailDispatchResult,
+  EmailProviderHealth,
+} from '../../interfaces/email-provider.interface';
 
 @Injectable()
 export class SmtpEmailProvider implements IEmailProvider {
-  readonly providerName = 'SMTP_LOCAL';
-  private readonly logger = new Logger(SmtpEmailProvider.name);
+  readonly providerName = 'smtp';
   private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
@@ -49,10 +53,11 @@ export class SmtpEmailProvider implements IEmailProvider {
 
   async sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult> {
     if (!this.transporter && !this.initTransporter()) {
-      return { success: false, error: 'SMTP transporter not configured' };
+      return { success: false, error: 'SMTP transporter not configured', statusCode: 500 };
     }
 
-    const fromAddress = options.from || process.env.SMTP_FROM || `"Kenzo Kore Security" <${process.env.SMTP_USER}>`;
+    const fromAddress =
+      options.from || process.env.SMTP_FROM || `"Kenzo Kore Security" <${process.env.SMTP_USER}>`;
 
     try {
       const info = await this.transporter!.sendMail({
@@ -61,9 +66,20 @@ export class SmtpEmailProvider implements IEmailProvider {
         subject: options.subject,
         html: options.html,
       });
-      return { success: true, messageId: info.messageId };
+      return { success: true, messageId: info.messageId, statusCode: 200 };
     } catch (err: any) {
-      return { success: false, error: err.message };
+      return { success: false, error: err.message, statusCode: 500 };
     }
+  }
+
+  async checkHealth(): Promise<EmailProviderHealth> {
+    const isConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+    return {
+      provider: 'SMTP (Local)',
+      status: isConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED',
+      mode: 'SMTP',
+      sender: process.env.SMTP_FROM || 'local@kenzoinfosystems.com',
+      healthy: isConfigured,
+    };
   }
 }

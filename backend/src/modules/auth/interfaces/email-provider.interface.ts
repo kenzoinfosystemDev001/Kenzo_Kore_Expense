@@ -3,17 +3,28 @@ export interface SendEmailOptions {
   subject: string;
   html: string;
   from?: string;
+  idempotencyKey?: string;
 }
 
 export interface EmailDispatchResult {
   success: boolean;
   messageId?: string;
   error?: string;
+  statusCode?: number;
+}
+
+export interface EmailProviderHealth {
+  provider: string;
+  status: 'CONFIGURED' | 'NOT_CONFIGURED';
+  mode: 'HTTPS_REST' | 'SMTP';
+  sender: string;
+  healthy: boolean;
 }
 
 export interface IEmailProvider {
   readonly providerName: string;
   sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult>;
+  checkHealth(): Promise<EmailProviderHealth>;
 }
 
 export interface SendOtpEmailOptions {

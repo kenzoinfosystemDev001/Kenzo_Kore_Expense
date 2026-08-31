@@ -34,6 +34,7 @@ import {
 } from './dto/activation.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { EmailService } from './services/email.service';
 
 @Controller('api/v1/auth')
 export class AuthController {
@@ -43,6 +44,7 @@ export class AuthController {
     private readonly identityService: IdentityService,
     private readonly passwordService: PasswordService,
     private readonly verificationService: VerificationService,
+    private readonly emailService: EmailService,
   ) {}
 
   // ==========================================
@@ -524,6 +526,14 @@ export class AuthController {
   @Get('directory-status')
   async getDirectoryStatus() {
     return this.identityService.getDirectoryStatus();
+  }
+
+  /**
+   * Check Email Delivery Subsystem Health
+   */
+  @Get('email-health')
+  async getEmailHealth() {
+    return this.emailService.checkHealth();
   }
 
   /**
