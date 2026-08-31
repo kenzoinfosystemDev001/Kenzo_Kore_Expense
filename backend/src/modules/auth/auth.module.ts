@@ -7,6 +7,8 @@ import { IdentityModule } from '../identity/identity.module';
 import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
 import { EmailService } from './services/email.service';
+import { ResendEmailProvider } from './services/providers/resend-email.provider';
+import { SmtpEmailProvider } from './services/providers/smtp-email.provider';
 import { RolesGuard } from './guards/roles.guard';
 
 @Module({
@@ -19,7 +21,25 @@ import { RolesGuard } from './guards/roles.guard';
     IdentityModule,
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy, PasswordService, VerificationService, EmailService, RolesGuard],
-  exports: [JwtStrategy, PassportModule, JwtModule, PasswordService, VerificationService, EmailService, RolesGuard],
+  providers: [
+    JwtStrategy,
+    PasswordService,
+    VerificationService,
+    EmailService,
+    ResendEmailProvider,
+    SmtpEmailProvider,
+    RolesGuard,
+  ],
+  exports: [
+    JwtStrategy,
+    PassportModule,
+    JwtModule,
+    PasswordService,
+    VerificationService,
+    EmailService,
+    ResendEmailProvider,
+    SmtpEmailProvider,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}
