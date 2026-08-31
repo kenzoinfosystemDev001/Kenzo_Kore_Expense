@@ -37,6 +37,8 @@ export interface IEmailProvider {
   checkHealth(): Promise<EmailProviderHealth>;
 }
 
+import { Resend } from 'resend';
+
 @Injectable()
 export class ResendEmailProvider implements IEmailProvider {
   readonly providerName = 'resend';
@@ -57,45 +59,28 @@ export class ResendEmailProvider implements IEmailProvider {
       'Kenzo Kore Security <onboarding@resend.dev>';
 
     this.logger.log('[EmailService] Provider=resend');
-    this.logger.log('[EmailService] HTTPS email dispatch started');
-
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${apiKey.trim()}`,
-      'Content-Type': 'application/json',
-    };
-
-    if (options.idempotencyKey) {
-      headers['Idempotency-Key'] = options.idempotencyKey;
-    }
+    this.logger.log(`[EmailService] Resend SDK dispatch started -> ${options.to}`);
 
     try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [options.to],
-          subject: options.subject,
-          html: options.html,
-        }),
-        signal: AbortSignal.timeout(12000),
+      const resend = new Resend(apiKey.trim());
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: [options.to],
+        subject: options.subject,
+        html: options.html,
+        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       });
 
-      if (response.ok) {
-        const data: any = await response.json();
-        this.logger.log(`[EmailService] Email accepted by provider (MessageId: ${data?.id || 'OK'})`);
-        return { success: true, messageId: data?.id, statusCode: response.status };
-      } else {
-        const errorText = await response.text().catch(() => 'Unknown API Error');
-        const safeCode = `HTTP_${response.status}`;
-        this.logger.error(`[EmailService] OTP dispatch failed provider=resend errorCode=${safeCode} reason=${errorText}`);
-        return { success: false, error: errorText, statusCode: response.status };
+      if (error) {
+        this.logger.error(`[EmailService] OTP dispatch failed provider=resend error=${error.name} message=${error.message}`);
+        return { success: false, error: error.message, statusCode: 400 };
       }
+
+      this.logger.log(`[EmailService] Email accepted by Resend (MessageId: ${data?.id || 'OK'})`);
+      return { success: true, messageId: data?.id, statusCode: 200 };
     } catch (err: any) {
-      const isTimeout = err?.name === 'TimeoutError' || err?.message?.toLowerCase().includes('timeout');
-      const safeCode = isTimeout ? 'NETWORK_TIMEOUT' : 'NETWORK_ERROR';
-      this.logger.error(`[EmailService] OTP dispatch failed provider=resend errorCode=${safeCode}`);
-      return { success: false, error: safeCode, statusCode: 504 };
+      this.logger.error(`[EmailService] Resend SDK unexpected error: ${err.message}`);
+      return { success: false, error: err.message, statusCode: 500 };
     }
   }
 
