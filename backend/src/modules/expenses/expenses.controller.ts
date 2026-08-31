@@ -41,8 +41,7 @@ export class ExpensesController {
   }
 
   /**
-   * Get Single Expense by ID with strict IDOR protection:
-   * Employee A cannot view Employee B's expense by altering the ID in the URL.
+   * Get Single Expense by ID with strict IDOR protection
    */
   @Get(':id')
   async getExpenseById(@Param('id') id: string, @Req() req: any) {
@@ -71,30 +70,37 @@ export class ExpensesController {
     const status = body.isDraft ? 'DRAFT' : 'SUBMITTED';
     const user = req.user;
 
+    const parsedAmount = isNaN(parseFloat(body.amount)) ? 0.0 : parseFloat(body.amount);
+    const parsedTax = isNaN(parseFloat(body.taxAmount)) ? 0.0 : parseFloat(body.taxAmount);
+    const referenceNumber =
+      body.referenceNumber && body.referenceNumber.trim() !== ''
+        ? body.referenceNumber.trim()
+        : `EXP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
     const newExpense = await this.prisma.expense.create({
       data: {
         title: body.title,
-        employeeId: user.id, // Strictly tied to authenticated user
+        employeeId: user.id,
         departmentId: user.departmentId || body.departmentId || 'dept_eng',
         costCenterId: user.costCenterId || body.costCenterId || 'cc_dev',
         category: body.category,
-        amount: parseFloat(body.amount),
+        amount: parsedAmount,
         currency: body.currency || 'USD',
-        date: new Date(body.date),
+        date: body.date ? new Date(body.date) : new Date(),
         paymentMethod: (body.paymentMethod as any) || 'UPI',
         status: status as any,
-        merchant: body.merchant,
+        merchant: body.merchant || 'General Merchant',
         businessPurpose: body.businessPurpose || '',
         billable: body.billable || false,
         location: body.location || '',
         receiptUrl: body.receiptUrl || '',
-        taxAmount: parseFloat(body.taxAmount) || 0.0,
-        referenceNumber: body.referenceNumber || '',
+        taxAmount: parsedTax,
+        referenceNumber,
         items: {
           create: body.items?.map((item: any) => ({
             description: item.description || '',
-            amount: parseFloat(item.amount) || 0.0,
-            taxAmount: parseFloat(item.taxAmount) || 0.0,
+            amount: isNaN(parseFloat(item.amount)) ? 0.0 : parseFloat(item.amount),
+            taxAmount: isNaN(parseFloat(item.taxAmount)) ? 0.0 : parseFloat(item.taxAmount),
             category: item.category || body.category,
           })) || [],
         },
@@ -129,28 +135,31 @@ export class ExpensesController {
     // Drop old items and recreate
     await this.prisma.expenseItem.deleteMany({ where: { expenseId: id } });
 
+    const parsedAmount = isNaN(parseFloat(body.amount)) ? expense.amount : parseFloat(body.amount);
+    const parsedTax = isNaN(parseFloat(body.taxAmount)) ? 0.0 : parseFloat(body.taxAmount);
+
     const updated = await this.prisma.expense.update({
       where: { id },
       data: {
-        title: body.title,
-        category: body.category,
-        amount: parseFloat(body.amount),
-        date: new Date(body.date),
-        paymentMethod: body.paymentMethod,
-        merchant: body.merchant,
-        businessPurpose: body.businessPurpose,
-        billable: body.billable,
-        location: body.location,
-        receiptUrl: body.receiptUrl,
-        taxAmount: parseFloat(body.taxAmount) || 0.0,
-        referenceNumber: body.referenceNumber,
+        title: body.title || expense.title,
+        category: body.category || expense.category,
+        amount: parsedAmount,
+        date: body.date ? new Date(body.date) : expense.date,
+        paymentMethod: body.paymentMethod || expense.paymentMethod,
+        merchant: body.merchant || expense.merchant,
+        businessPurpose: body.businessPurpose !== undefined ? body.businessPurpose : expense.businessPurpose,
+        billable: body.billable !== undefined ? body.billable : expense.billable,
+        location: body.location || expense.location,
+        receiptUrl: body.receiptUrl !== undefined ? body.receiptUrl : expense.receiptUrl,
+        taxAmount: parsedTax,
+        referenceNumber: body.referenceNumber !== undefined ? body.referenceNumber : expense.referenceNumber,
         status: body.status || expense.status,
         items: {
           create: body.items?.map((item: any) => ({
-            description: item.description,
-            amount: parseFloat(item.amount),
-            taxAmount: parseFloat(item.taxAmount),
-            category: item.category || body.category,
+            description: item.description || '',
+            amount: isNaN(parseFloat(item.amount)) ? 0.0 : parseFloat(item.amount),
+            taxAmount: isNaN(parseFloat(item.taxAmount)) ? 0.0 : parseFloat(item.taxAmount),
+            category: item.category || body.category || expense.category,
           })) || [],
         },
       },
