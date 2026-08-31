@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ResendEmailProvider } from './providers/resend-email.provider';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
+import { SendOtpEmailOptions } from '../interfaces/email-provider.interface';
 
 @Injectable()
 export class EmailService {
@@ -10,19 +11,23 @@ export class EmailService {
     private readonly resendProvider: ResendEmailProvider,
     private readonly smtpProvider: SmtpEmailProvider,
   ) {
-    if (process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY) {
-      this.logger.log('Primary Email Provider configured: Resend HTTPS REST API (Port 443)');
+    const provider = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
+    if (provider === 'resend' || process.env.RESEND_API_KEY) {
+      this.logger.log('Active Email Delivery Engine: Resend HTTPS REST API (Port 443)');
     } else {
-      this.logger.warn('RESEND_API_KEY not detected. Set RESEND_API_KEY in your Render dashboard for production delivery.');
+      this.logger.warn('Active Email Delivery Engine: Local SMTP (Development Only)');
     }
   }
 
   /**
-   * Dispatches a single-use 6-digit verification code using Resend HTTPS API (Port 443)
+   * Primary OTP dispatch method:
+   * Sends branded 6-digit challenge to recipient corporate inbox via HTTPS :443.
+   * Returns true on SUCCESS, false on FAILURE.
    */
-  async sendVerificationOtp(to: string, otp: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<boolean> {
+  async sendOtpEmail(options: SendOtpEmailOptions): Promise<boolean> {
+    const { recipient, otp, purpose } = options;
+    const cleanEmail = recipient.trim().toLowerCase();
     const title = purpose === 'ACTIVATION' ? 'Account Activation Verification Code' : 'Password Reset Verification Code';
-    const cleanEmail = to.trim().toLowerCase();
 
     const subject = `[Kenzo Kore Expense] ${title}`;
     const html = `
@@ -49,8 +54,10 @@ export class EmailService {
       </div>
     `;
 
-    // 1. Primary Strategy: Resend HTTPS API (Port 443) - Clean, fast, unblocked on Render
-    if (process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY) {
+    const providerType = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
+
+    // Production Path: Resend HTTPS API (Port 443)
+    if (providerType === 'resend' || process.env.RESEND_API_KEY) {
       const resendResult = await this.resendProvider.sendEmail({
         to: cleanEmail,
         subject,
@@ -58,16 +65,16 @@ export class EmailService {
       });
 
       if (resendResult.success) {
-        this.logger.log(`Verification code successfully dispatched via Resend HTTPS to ${cleanEmail}`);
+        this.logger.log(`[RESEND_HTTPS_DELIVERY_SUCCESS] Dispatched verification code to ${cleanEmail}`);
         return true;
       }
 
-      this.logger.error(`Resend HTTPS delivery failed for ${cleanEmail}: ${resendResult.error}`);
+      this.logger.error(`[RESEND_HTTPS_DELIVERY_FAILED] Resend API rejected email for ${cleanEmail}: ${resendResult.error}`);
       return false;
     }
 
-    // 2. Secondary Local Development Strategy: SMTP (Only used if no Resend key is provided)
-    this.logger.warn(`Dispatching via local SMTP fallback for ${cleanEmail}...`);
+    // Local Development Path: SMTP (Only used if EMAIL_PROVIDER=smtp is explicitly set)
+    this.logger.warn(`Dispatching via local SMTP for ${cleanEmail}...`);
     const smtpResult = await this.smtpProvider.sendEmail({
       to: cleanEmail,
       subject,
@@ -75,11 +82,18 @@ export class EmailService {
     });
 
     if (smtpResult.success) {
-      this.logger.log(`Verification code delivered via local SMTP fallback to ${cleanEmail}`);
+      this.logger.log(`[SMTP_DELIVERY_SUCCESS] Dispatched verification code to ${cleanEmail}`);
       return true;
     }
 
-    this.logger.error(`Local SMTP fallback delivery failed for ${cleanEmail}: ${smtpResult.error}`);
+    this.logger.error(`[SMTP_DELIVERY_FAILED] SMTP transmission failed for ${cleanEmail}: ${smtpResult.error}`);
     return false;
+  }
+
+  /**
+   * Compatibility wrapper for existing service callers
+   */
+  async sendVerificationOtp(to: string, otp: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<boolean> {
+    return this.sendOtpEmail({ recipient: to, otp, purpose });
   }
 }

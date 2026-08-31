@@ -15,3 +15,9 @@ export interface IEmailProvider {
   readonly providerName: string;
   sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult>;
 }
+
+export interface SendOtpEmailOptions {
+  recipient: string;
+  otp: string;
+  purpose: 'ACTIVATION' | 'PASSWORD_RESET';
+}

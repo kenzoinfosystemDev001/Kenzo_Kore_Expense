@@ -11,14 +11,14 @@ export class ResendEmailProvider implements IEmailProvider {
    * 100% immune to cloud SMTP port blocks (Render, AWS, DigitalOcean)
    */
   async sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult> {
-    const apiKey = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
+    const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY is not configured in environment variables.');
-      return { success: false, error: 'RESEND_API_KEY is missing' };
+      this.logger.error('RESEND_API_KEY is missing. Please configure it in your environment variables.');
+      return { success: false, error: 'RESEND_API_KEY is not configured' };
     }
 
-    const fromAddress = options.from || process.env.RESEND_FROM || process.env.SMTP_FROM || 'Kenzo Kore Security <onboarding@resend.dev>';
+    const fromAddress = options.from || process.env.EMAIL_FROM || process.env.RESEND_FROM || 'Kenzo Kore Security <onboarding@resend.dev>';
 
     try {
       this.logger.log(`Dispatching email to ${options.to} via Resend HTTPS REST API (Port 443)...`);
@@ -44,11 +44,11 @@ export class ResendEmailProvider implements IEmailProvider {
         return { success: true, messageId: data?.id };
       } else {
         const errorText = await response.text();
-        this.logger.error(`Resend HTTPS API error (${response.status}): ${errorText}`);
+        this.logger.error(`Resend HTTPS API rejected request (${response.status}): ${errorText}`);
         return { success: false, error: errorText };
       }
     } catch (err: any) {
-      this.logger.error(`Resend HTTPS API connection failed: ${err.message}`);
+      this.logger.error(`Resend HTTPS API network error: ${err.message}`);
       return { success: false, error: err.message };
     }
   }
