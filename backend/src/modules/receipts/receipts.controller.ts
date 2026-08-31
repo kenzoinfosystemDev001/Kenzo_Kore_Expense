@@ -1,10 +1,12 @@
 import {
   Controller,
   Post,
+  Get,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { v2 as cloudinary } from 'cloudinary';
@@ -24,6 +26,14 @@ export class ReceiptsController {
   }
 
   /**
+   * Health Check for Document OCR Subsystem
+   */
+  @Get('ocr-health')
+  async getOcrHealth() {
+    return this.ocrService.checkHealth();
+  }
+
+  /**
    * Standard receipt image/PDF upload to Cloudinary
    */
   @Post('upload')
@@ -33,17 +43,13 @@ export class ReceiptsController {
       throw new BadRequestException('No file provided for upload');
     }
 
-    // Security Check: File Size Limit (10MB)
-    const MAX_SIZE = 10 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      throw new BadRequestException('File size exceeds maximum enterprise limit of 10MB');
-    }
+    // Security Check: File validation
+    this.ocrService.validateFile(file);
 
-    // Security Check: Allowed MIME Types (PDF & Images)
-    const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Invalid file format. Only PDF, PNG, JPG, JPEG, and WEBP documents are allowed');
-    }
+    // Sanitize filename to prevent path traversal
+    const safeFilename = (file.originalname || 'receipt')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 100);
 
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -55,6 +61,7 @@ export class ReceiptsController {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
               folder: 'kenzo_kore_receipts',
+              public_id: `rec_${Date.now()}_${safeFilename.split('.')[0]}`,
               resource_type: 'auto',
             },
             (error, result) => {
@@ -91,7 +98,7 @@ export class ReceiptsController {
 
   /**
    * Real Enterprise OCR Receipt / Invoice Processing
-   * Concurrently uploads the receipt to Cloudinary and executes OCR entity extraction
+   * Concurrently uploads the receipt to Cloudinary and executes decoupled OCR entity extraction
    */
   @Post('process-ocr')
   @UseInterceptors(FileInterceptor('file'))
@@ -100,11 +107,15 @@ export class ReceiptsController {
       throw new BadRequestException('No document file provided for OCR extraction');
     }
 
-    // 1. Run OCR and Entity Extraction
+    // 1. Run OCR and Entity Extraction with strict security validation
     const extractedData = await this.ocrService.processDocument(file);
 
     // 2. Concurrently Upload Receipt Document to Cloudinary
     let receiptUrl = '';
+    const safeFilename = (file.originalname || 'receipt')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 100);
+
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -115,6 +126,7 @@ export class ReceiptsController {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
               folder: 'kenzo_kore_receipts',
+              public_id: `ocr_${Date.now()}_${safeFilename.split('.')[0]}`,
               resource_type: 'auto',
             },
             (error, result) => {
@@ -139,7 +151,7 @@ export class ReceiptsController {
       success: true,
       message: 'Receipt document successfully scanned and parsed',
       receiptUrl,
-      fileName: file.originalname,
+      fileName: safeFilename,
       fileSize: file.size,
       mimeType: file.mimetype,
       extractedData,
