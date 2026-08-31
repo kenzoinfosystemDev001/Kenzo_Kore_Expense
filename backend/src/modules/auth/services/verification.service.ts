@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
@@ -24,12 +24,13 @@ export class VerificationService {
   }
 
   /**
-   * Generate and store a secure verification challenge (OTP) for activation or password reset.
+   * Generate, store, and dispatch a secure verification challenge (OTP) for activation or password reset.
+   * STRICT GUARANTEE: Never reports success unless the email is successfully dispatched via SMTP.
    */
   async createChallenge(email: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<{ success: boolean; message: string; expiresInSeconds: number }> {
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Rate limiting: 5-second cooldown to prevent double clicks while allowing instant retries
+    // 1. Rate limiting: 5-second cooldown to prevent double clicks while allowing retries
     const recentChallenge = await this.prisma.verificationChallenge.findFirst({
       where: {
         email: cleanEmail,
@@ -51,7 +52,7 @@ export class VerificationService {
         usedAt: null,
       },
       data: {
-        usedAt: new Date(), // Mark previous challenges as expired/used
+        usedAt: new Date(), // Mark previous challenges as expired
       }
     });
 
@@ -60,7 +61,7 @@ export class VerificationService {
     const codeHash = this.hashOtp(rawOtp);
     const expiresAt = new Date(Date.now() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
 
-    await this.prisma.verificationChallenge.create({
+    const challengeRecord = await this.prisma.verificationChallenge.create({
       data: {
         email: cleanEmail,
         codeHash,
@@ -71,12 +72,22 @@ export class VerificationService {
       }
     });
 
-    // 4. Dispatch Email via Pooled SMTP Transport (Gmail / Google Workspace SMTP)
-    this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose).catch(err => {
-      this.logger.error(`Error sending email to ${cleanEmail}:`, err);
-    });
+    // 4. Dispatch Email via SMTP Transport
+    const emailDelivered = await this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose);
 
-    this.logger.log(`[VERIFICATION_DISPATCH] 6-digit OTP generated and dispatched for ${cleanEmail} (purpose: ${purpose}). Code: ${rawOtp}`);
+    if (!emailDelivered) {
+      // Invalidate the record if transmission failed so user is not stuck with an unreachable challenge
+      await this.prisma.verificationChallenge.delete({
+        where: { id: challengeRecord.id },
+      }).catch(() => null);
+
+      this.logger.error(`[VERIFICATION_DISPATCH_FAILED] Could not deliver OTP email to ${cleanEmail}`);
+      throw new InternalServerErrorException(
+        'Failed to deliver the verification code to your corporate email. Please try again or contact IT support.'
+      );
+    }
+
+    this.logger.log(`[VERIFICATION_DISPATCH] 6-digit OTP challenge successfully dispatched to ${cleanEmail} (purpose: ${purpose})`);
 
     return {
       success: true,
