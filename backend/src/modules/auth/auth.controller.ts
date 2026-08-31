@@ -17,6 +17,7 @@ import {
   Ip,
   Headers,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -52,6 +53,7 @@ export class AuthController {
    * Step 1: Check Employee Eligibility against Master Identity Directory (Google Workspace / SCIM)
    */
   @Post('activation/check-email')
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async checkEligibility(@Body() dto: CheckEmailDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
@@ -97,6 +99,7 @@ export class AuthController {
    * Step 2: Send OTP Challenge to Corporate Email Inbox
    */
   @Post('activation/send-otp')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async sendActivationOtp(@Body() dto: SendOtpDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
@@ -129,6 +132,7 @@ export class AuthController {
    * Step 3: Verify OTP Challenge submitted by user
    */
   @Post('activation/verify-otp')
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async verifyActivationOtp(@Body() dto: VerifyOtpDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
@@ -146,6 +150,7 @@ export class AuthController {
    * Step 4: Create Password & Complete Account Activation
    */
   @Post('activation/set-password')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
   async completeActivation(@Body() dto: SetPasswordDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
@@ -257,6 +262,7 @@ export class AuthController {
    * Enterprise Login Handler
    */
   @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
@@ -333,6 +339,7 @@ export class AuthController {
   // ==========================================
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
@@ -354,6 +361,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto, @Ip() ip: string) {
     const cleanEmail = dto.email.trim().toLowerCase();
