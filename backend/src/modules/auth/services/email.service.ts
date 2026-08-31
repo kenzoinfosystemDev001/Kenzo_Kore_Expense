@@ -1,8 +1,195 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { ResendEmailProvider } from './providers/resend-email.provider';
-import { SmtpEmailProvider } from './providers/smtp-email.provider';
-import { SendOtpEmailOptions, EmailProviderHealth } from '../interfaces/email-provider.interface';
+import * as nodemailer from 'nodemailer';
+
+export interface SendEmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+  idempotencyKey?: string;
+}
+
+export interface EmailDispatchResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  statusCode?: number;
+}
+
+export interface EmailProviderHealth {
+  provider: string;
+  status: 'CONFIGURED' | 'NOT_CONFIGURED';
+  mode: 'HTTPS_REST' | 'SMTP';
+  sender: string;
+  healthy: boolean;
+}
+
+export interface SendOtpEmailOptions {
+  recipient: string;
+  otp: string;
+  purpose: 'ACTIVATION' | 'PASSWORD_RESET';
+}
+
+export interface IEmailProvider {
+  readonly providerName: string;
+  sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult>;
+  checkHealth(): Promise<EmailProviderHealth>;
+}
+
+@Injectable()
+export class ResendEmailProvider implements IEmailProvider {
+  readonly providerName = 'resend';
+  private readonly logger = new Logger(ResendEmailProvider.name);
+
+  async sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult> {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      this.logger.error('[EmailService] OTP dispatch failed provider=resend errorCode=MISSING_API_KEY');
+      return { success: false, error: 'RESEND_API_KEY is not configured', statusCode: 401 };
+    }
+
+    const fromAddress =
+      options.from ||
+      process.env.EMAIL_FROM ||
+      process.env.RESEND_FROM ||
+      'Kenzo Kore Security <onboarding@resend.dev>';
+
+    this.logger.log('[EmailService] Provider=resend');
+    this.logger.log('[EmailService] HTTPS email dispatch started');
+
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${apiKey.trim()}`,
+      'Content-Type': 'application/json',
+    };
+
+    if (options.idempotencyKey) {
+      headers['Idempotency-Key'] = options.idempotencyKey;
+    }
+
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          from: fromAddress,
+          to: [options.to],
+          subject: options.subject,
+          html: options.html,
+        }),
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (response.ok) {
+        const data: any = await response.json();
+        this.logger.log(`[EmailService] Email accepted by provider (MessageId: ${data?.id || 'OK'})`);
+        return { success: true, messageId: data?.id, statusCode: response.status };
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown API Error');
+        const safeCode = `HTTP_${response.status}`;
+        this.logger.error(`[EmailService] OTP dispatch failed provider=resend errorCode=${safeCode} reason=${errorText}`);
+        return { success: false, error: errorText, statusCode: response.status };
+      }
+    } catch (err: any) {
+      const isTimeout = err?.name === 'TimeoutError' || err?.message?.toLowerCase().includes('timeout');
+      const safeCode = isTimeout ? 'NETWORK_TIMEOUT' : 'NETWORK_ERROR';
+      this.logger.error(`[EmailService] OTP dispatch failed provider=resend errorCode=${safeCode}`);
+      return { success: false, error: safeCode, statusCode: 504 };
+    }
+  }
+
+  async checkHealth(): Promise<EmailProviderHealth> {
+    const apiKey = process.env.RESEND_API_KEY;
+    const fromAddress =
+      process.env.EMAIL_FROM || process.env.RESEND_FROM || 'Kenzo Kore Security <onboarding@resend.dev>';
+
+    return {
+      provider: 'Resend',
+      status: apiKey ? 'CONFIGURED' : 'NOT_CONFIGURED',
+      mode: 'HTTPS_REST',
+      sender: fromAddress,
+      healthy: !!apiKey,
+    };
+  }
+}
+
+@Injectable()
+export class SmtpEmailProvider implements IEmailProvider {
+  readonly providerName = 'smtp';
+  private transporter: nodemailer.Transporter | null = null;
+
+  constructor() {
+    this.initTransporter();
+  }
+
+  private initTransporter(): boolean {
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const user = process.env.SMTP_USER;
+    const rawPass = process.env.SMTP_PASS;
+
+    if (!user || !rawPass) {
+      this.transporter = null;
+      return false;
+    }
+
+    const pass = rawPass.replace(/\s+/g, '');
+    const isSecure = port === 465;
+
+    try {
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: isSecure,
+        auth: { user, pass },
+        tls: {
+          minVersion: 'TLSv1.2',
+          rejectUnauthorized: false,
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      } as any);
+      return true;
+    } catch {
+      this.transporter = null;
+      return false;
+    }
+  }
+
+  async sendEmail(options: SendEmailOptions): Promise<EmailDispatchResult> {
+    if (!this.transporter && !this.initTransporter()) {
+      return { success: false, error: 'SMTP transporter not configured', statusCode: 500 };
+    }
+
+    const fromAddress =
+      options.from || process.env.SMTP_FROM || `"Kenzo Kore Security" <${process.env.SMTP_USER}>`;
+
+    try {
+      const info = await this.transporter!.sendMail({
+        from: fromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+      return { success: true, messageId: info.messageId, statusCode: 200 };
+    } catch (err: any) {
+      return { success: false, error: err.message, statusCode: 500 };
+    }
+  }
+
+  async checkHealth(): Promise<EmailProviderHealth> {
+    const isConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+    return {
+      provider: 'SMTP (Local)',
+      status: isConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED',
+      mode: 'SMTP',
+      sender: process.env.SMTP_FROM || 'local@kenzoinfosystems.com',
+      healthy: isConfigured,
+    };
+  }
+}
 
 @Injectable()
 export class EmailService {
@@ -20,11 +207,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Primary OTP dispatch method:
-   * Dispatches single-use 6-digit challenge via Resend HTTPS :443 with safe logs and controlled retries.
-   * Returns true on SUCCESS, false on FAILURE.
-   */
   async sendOtpEmail(options: SendOtpEmailOptions): Promise<boolean> {
     const { recipient, otp, purpose } = options;
     const cleanEmail = recipient.trim().toLowerCase();
@@ -55,7 +237,6 @@ export class EmailService {
       </div>
     `;
 
-    // Generate unique idempotency key for this challenge to prevent duplicate emails on retries
     const idempotencyKey = crypto
       .createHash('sha256')
       .update(`${cleanEmail}:${purpose}:${otp}`)
@@ -63,9 +244,7 @@ export class EmailService {
 
     const providerType = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 
-    // 1. Production Path: Resend HTTPS API (Port 443)
     if (providerType === 'resend' || process.env.RESEND_API_KEY) {
-      // Attempt 1
       const resendResult = await this.resendProvider.sendEmail({
         to: cleanEmail,
         subject,
@@ -77,13 +256,11 @@ export class EmailService {
         return true;
       }
 
-      // If permanent 4xx client error (e.g. invalid domain, unauthorized), do NOT retry
       if (resendResult.statusCode && resendResult.statusCode >= 400 && resendResult.statusCode < 500) {
         this.logger.error(`[EmailService] Non-retryable client error (${resendResult.statusCode}). Aborting dispatch.`);
         return false;
       }
 
-      // Controlled Retry: Single retry after 1000ms for transient 5xx / network errors
       this.logger.warn(`[EmailService] Transient issue encountered. Executing single controlled retry...`);
       await new Promise((res) => setTimeout(res, 1000));
 
@@ -97,7 +274,6 @@ export class EmailService {
       return retryResult.success;
     }
 
-    // 2. Local Development Fallback: SMTP (Only when EMAIL_PROVIDER=smtp is configured)
     this.logger.warn(`[EmailService] Dispatching via local SMTP fallback for recipient=${cleanEmail.split('@')[0]}@***`);
     const smtpResult = await this.smtpProvider.sendEmail({
       to: cleanEmail,
@@ -108,16 +284,10 @@ export class EmailService {
     return smtpResult.success;
   }
 
-  /**
-   * Compatibility wrapper for existing service callers
-   */
   async sendVerificationOtp(to: string, otp: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<boolean> {
     return this.sendOtpEmail({ recipient: to, otp, purpose });
   }
 
-  /**
-   * Safe Health Check for Email Delivery Subsystem
-   */
   async checkHealth(): Promise<EmailProviderHealth> {
     const providerType = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
     if (providerType === 'resend' || process.env.RESEND_API_KEY) {

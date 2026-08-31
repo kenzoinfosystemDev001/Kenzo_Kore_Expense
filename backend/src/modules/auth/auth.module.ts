@@ -6,9 +6,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { IdentityModule } from '../identity/identity.module';
 import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
-import { EmailService } from './services/email.service';
-import { ResendEmailProvider } from './services/providers/resend-email.provider';
-import { SmtpEmailProvider } from './services/providers/smtp-email.provider';
+import { EmailService, ResendEmailProvider, SmtpEmailProvider } from './services/email.service';
 import { RolesGuard } from './guards/roles.guard';
 
 @Module({
