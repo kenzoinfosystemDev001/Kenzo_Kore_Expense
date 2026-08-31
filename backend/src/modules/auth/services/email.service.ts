@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
+
+// Force strict IPv4 resolution for Cloud container hosts (Render, AWS)
+const ipv4OnlyLookup = (hostname: string, options: any, callback: any) => {
+  return dns.lookup(hostname, { family: 4 }, callback);
+};
 
 @Injectable()
 export class EmailService {
@@ -21,7 +27,7 @@ export class EmailService {
         host,
         port,
         secure: port === 465, // SSL for 465
-        family: 4, // Force IPv4 to prevent ENETUNREACH on Render/Cloud containers
+        lookup: ipv4OnlyLookup, // HARD FORCES Node socket to strictly connect to IPv4 (A records)
         auth: { user, pass },
         tls: {
           rejectUnauthorized: false,
@@ -31,7 +37,7 @@ export class EmailService {
         greetingTimeout: 20000,
         socketTimeout: 30000,
       } as any);
-      this.logger.log(`Direct SSL Cloud SMTP Transport configured for: ${user} (${host}:${port}, IPv4 forced)`);
+      this.logger.log(`Strict IPv4 SSL Cloud SMTP Transport configured for: ${user} (${host}:${port})`);
     } else {
       this.logger.warn(`SMTP credentials not configured. Verification codes will be recorded to server logs.`);
     }
