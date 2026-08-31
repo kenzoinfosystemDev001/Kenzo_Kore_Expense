@@ -16,8 +16,9 @@ export interface EmailDispatchResult {
 export interface EmailProviderHealth {
   provider: string;
   status: 'CONFIGURED' | 'NOT_CONFIGURED';
-  mode: 'HTTPS_REST' | 'SMTP';
+  mode: 'GMAIL_REST_HTTPS' | 'HTTPS_REST';
   sender: string;
+  impersonatedUser?: string;
   healthy: boolean;
 }
 

@@ -7,8 +7,7 @@ import { IdentityModule } from '../identity/identity.module';
 import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
 import { EmailService } from './services/email.service';
-import { ResendEmailProvider } from './services/providers/resend-email.provider';
-import { SmtpEmailProvider } from './services/providers/smtp-email.provider';
+import { GmailApiEmailProvider } from './services/providers/gmail-api-email.provider';
 import { RolesGuard } from './guards/roles.guard';
 
 @Module({
@@ -26,8 +25,7 @@ import { RolesGuard } from './guards/roles.guard';
     PasswordService,
     VerificationService,
     EmailService,
-    ResendEmailProvider,
-    SmtpEmailProvider,
+    GmailApiEmailProvider,
     RolesGuard,
   ],
   exports: [
@@ -37,8 +35,7 @@ import { RolesGuard } from './guards/roles.guard';
     PasswordService,
     VerificationService,
     EmailService,
-    ResendEmailProvider,
-    SmtpEmailProvider,
+    GmailApiEmailProvider,
     RolesGuard,
   ],
 })
