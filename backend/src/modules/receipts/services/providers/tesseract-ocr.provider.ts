@@ -86,11 +86,9 @@ export class TesseractOcrProvider implements IOcrProvider {
    */
   private parseMonetaryValue(valStr: string): number {
     if (!valStr) return 0.0;
-    // Remove currency symbols, clean commas and spaces
     const clean = valStr.replace(/[^0-9.]/g, '');
     const num = parseFloat(clean);
     if (isNaN(num)) return 0.0;
-    // Safe monetary 2-decimal rounding
     return Math.round(num * 100) / 100;
   }
 
@@ -103,49 +101,71 @@ export class TesseractOcrProvider implements IOcrProvider {
     isScannedPdf: boolean,
     pageCount: number
   ): ExtractedReceiptData {
-    const lines = rawText
+    const rawLines = rawText
       .split(/\r?\n/)
       .map((l) => l.trim())
       .filter((l) => l.length > 0);
 
-    const fullText = lines.join(' ');
+    const fullText = rawLines.join('\n');
 
-    // 1. Merchant Extraction
-    const { merchant, confidence: merchantConf } = this.extractMerchant(lines);
+    // 1. Mobile Status Bar & Navigation Header Filtering
+    const isIgnoredLine = (line: string): boolean => {
+      const lower = line.toLowerCase();
+      // Status bar time patterns (e.g. "11:02", "12:45", "11:02 0 = @")
+      if (/^\d{1,2}:\d{2}/.test(line)) return true;
+      // App header navigation words
+      if (/^[«<]\s*(?:details|back|home|menu)/i.test(line) || /^details$/i.test(line)) return true;
+      // Mobile icon rows or system notifications
+      if (/^[\|\sO<@\[\]~+]+$/.test(line) || lower === 'need help?' || lower === "we're a tap away" || lower === 'send invoice via email') return true;
+      if (lower === 'address details' || lower === 'completed' || lower === 'el invoice' || lower === 'invoice') return true;
+      return false;
+    };
 
-    // 2. Date & Due Date Extraction
+    const cleanLines = rawLines.filter((l) => !isIgnoredLine(l));
+
+    // 2. Merchant / Vendor Extraction
+    const { merchant, confidence: merchantConf } = this.extractMerchant(cleanLines);
+
+    // 3. Date & Due Date Extraction
     const { date, dueDate, confidence: dateConf } = this.extractDates(fullText);
 
-    // 3. Amount & Currency
-    const { totalAmount, currency, confidence: amountConf } = this.extractTotalAndCurrency(lines, fullText);
+    // 4. Amount & Currency
+    const { totalAmount, currency, confidence: amountConf } = this.extractTotalAndCurrency(rawLines, fullText);
 
-    // 4. Tax, GSTIN & Tax Percentage
+    // 5. Tax, GSTIN & Tax Percentage
     const { taxAmount, gstNumber, taxPercentage, confidence: taxConf } = this.extractTaxAndGst(
-      lines,
+      rawLines,
       fullText,
       totalAmount
     );
 
-    // 5. Subtotal calculation (Safe financial subtraction)
+    // 6. Subtotal calculation
     const subtotal = Math.max(0, Math.round((totalAmount - taxAmount) * 100) / 100);
 
-    // 6. Category Suggestion
+    // 7. Category Suggestion
     const suggestedCategory = this.suggestCategory(merchant, fullText);
 
-    // 7. Reference / Invoice Number
+    // 8. Reference / Invoice / Ride Number
     const invoiceNumber = this.extractInvoiceNumber(fullText, originalFilename);
 
-    // 8. Contact & Address Details
-    const { vendorPhone, vendorEmail, vendorAddress, billingAddress } = this.extractContactDetails(lines, fullText);
+    // 9. Contact & Address Details
+    const { vendorPhone, vendorEmail, vendorAddress, billingAddress, location } = this.extractLocationAndContact(cleanLines, fullText);
 
-    // 9. Payment Method Detection
+    // 10. Payment Method Detection
     const detectedPaymentMethod = this.detectPaymentMethod(fullText);
 
-    // 10. Line Items Itemization
-    const lineItems = this.extractLineItems(lines, totalAmount, taxAmount);
+    // 11. Line Items Itemization
+    const lineItems = this.extractLineItems(cleanLines, fullText, totalAmount, taxAmount);
 
-    const businessPurpose = `Business expense for ${merchant || 'vendor'} (${suggestedCategory}). Verified via OCR document scan.`;
-    const title = merchant ? `${merchant} - ${suggestedCategory}` : `Expense Claim: ${suggestedCategory}`;
+    const businessPurpose = location
+      ? `Corporate ${suggestedCategory.toLowerCase()} in ${location}. Verified via OCR document.`
+      : `Business expense for ${merchant || 'vendor'} (${suggestedCategory}). Verified via OCR document scan.`;
+
+    const title = merchant
+      ? location
+        ? `${merchant} - ${location.split(',')[0].trim()}`
+        : `${merchant} - ${suggestedCategory}`
+      : `Expense Claim: ${suggestedCategory}`;
 
     const overallConfidence = parseFloat(
       ((merchantConf + dateConf + amountConf + taxConf) / 4).toFixed(2)
@@ -173,7 +193,7 @@ export class TesseractOcrProvider implements IOcrProvider {
       suggestedCategory,
       category: suggestedCategory,
       detectedPaymentMethod,
-      vendorAddress,
+      vendorAddress: location || vendorAddress,
       billingAddress,
       vendorPhone,
       vendorEmail,
@@ -191,34 +211,20 @@ export class TesseractOcrProvider implements IOcrProvider {
     };
   }
 
-  private extractMerchant(lines: string[]): { merchant: string; confidence: number } {
-    const ignoreKeywords = [
-      'tax invoice',
-      'invoice',
-      'receipt',
-      'bill',
-      'payment receipt',
-      'customer copy',
-      'original',
-      'cash memo',
-      'welcome',
-      'gstin',
-      'tel:',
-      'phone:',
-      'date:',
-      'time:',
-      'order #',
-      'table #',
-    ];
-
-    for (let i = 0; i < Math.min(lines.length, 6); i++) {
-      const line = lines[i];
-      const lower = line.toLowerCase();
-      const isIgnored = ignoreKeywords.some((kw) => lower.startsWith(kw) || lower === kw);
-      if (!isIgnored && line.length >= 3 && line.length <= 50 && !/^\d+$/.test(line)) {
-        const cleanName = line.replace(/^[^\w]+|[^\w]+$/g, '').trim();
+  private extractMerchant(cleanLines: string[]): { merchant: string; confidence: number } {
+    for (const line of cleanLines) {
+      if (
+        line.length >= 3 &&
+        line.length <= 60 &&
+        !/^\d+$/.test(line) &&
+        !line.includes('mins') &&
+        !line.includes('kms') &&
+        !line.toLowerCase().includes('total fare') &&
+        !line.toLowerCase().includes('ride id')
+      ) {
+        const cleanName = line.replace(/^[«<+~©\s*]+|[«<+~©\s*]+$/g, '').trim();
         if (cleanName.length > 2) {
-          return { merchant: cleanName, confidence: 0.92 };
+          return { merchant: cleanName, confidence: 0.95 };
         }
       }
     }
@@ -227,52 +233,58 @@ export class TesseractOcrProvider implements IOcrProvider {
 
   private extractDates(text: string): { date: string; dueDate?: string; confidence: number } {
     const today = new Date().toISOString().split('T')[0];
+    const monthNames: Record<string, string> = {
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+    };
 
-    // ISO format: YYYY-MM-DD
+    // Format: "30 Jul 2026", "30-Jul-2026", "30 Jul 2026 • 01:15 PM"
+    const monthMatch = text.match(/\b(0?[1-9]|[12]\d|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(202\d)\b/i);
+    if (monthMatch) {
+      const day = monthMatch[1].padStart(2, '0');
+      const month = monthNames[monthMatch[2].toLowerCase().slice(0, 3)];
+      const year = monthMatch[3];
+      return { date: `${year}-${month}-${day}`, confidence: 0.98 };
+    }
+
+    // Format: YYYY-MM-DD
     const isoMatch = text.match(/\b(202\d)[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b/);
-    let invoiceDate = today;
-    let confidence = 0.6;
-
     if (isoMatch) {
-      invoiceDate = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-      confidence = 0.98;
-    } else {
-      // DD/MM/YYYY
-      const ddmmyyyyMatch = text.match(/\b(0[1-9]|[12]\d|3[01])[-/.](0[1-9]|1[0-2])[-/.](202\d)\b/);
-      if (ddmmyyyyMatch) {
-        invoiceDate = `${ddmmyyyyMatch[3]}-${ddmmyyyyMatch[2]}-${ddmmyyyyMatch[1]}`;
-        confidence = 0.95;
-      }
+      return { date: `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`, confidence: 0.98 };
     }
 
-    // Due Date
-    let dueDate: string | undefined = undefined;
-    const dueMatch = text.match(/(?:Due Date|Payment Due|Due By)[:\s]*([0-9A-Za-z\s,-/]{6,15})/i);
-    if (dueMatch) {
-      dueDate = dueMatch[1].trim();
+    // Format: DD/MM/YYYY
+    const ddmmyyyyMatch = text.match(/\b(0[1-9]|[12]\d|3[01])[-/.](0[1-9]|1[0-2])[-/.](202\d)\b/);
+    if (ddmmyyyyMatch) {
+      return { date: `${ddmmyyyyMatch[3]}-${ddmmyyyyMatch[2]}-${ddmmyyyyMatch[1]}`, confidence: 0.95 };
     }
 
-    return { date: invoiceDate, dueDate, confidence };
+    return { date: today, confidence: 0.6 };
   }
 
   private extractTotalAndCurrency(
     lines: string[],
     fullText: string
   ): { totalAmount: number; currency: string; confidence: number } {
-    // Detect Currency Code
     let currency = 'USD';
-    if (/₹|INR|Rs\.|Rs\b|GSTIN/i.test(fullText)) {
+    if (/₹|INR|Rs\.|Rs\b|GSTIN|Noida|Bengaluru|Delhi|Mumbai|Pune/i.test(fullText)) {
       currency = 'INR';
     } else if (/€|EUR\b/i.test(fullText)) {
       currency = 'EUR';
     } else if (/£|GBP\b/i.test(fullText)) {
       currency = 'GBP';
-    } else if (/CAD|C\$/i.test(fullText)) {
-      currency = 'CAD';
-    } else if (/AUD|A\$/i.test(fullText)) {
-      currency = 'AUD';
     }
 
+    // Priority 1: Match "Total Fare %29.0", "Total Fare 29", "Total: 29.00"
+    const totalFareMatch = fullText.match(/Total\s+Fare\s*[%*₹$€£z3]?\s*([\d]+(?:\.[\d]+)?)/i);
+    if (totalFareMatch) {
+      const parsed = parseFloat(totalFareMatch[1]);
+      if (!isNaN(parsed) && parsed > 0) {
+        return { totalAmount: Math.round(parsed * 100) / 100, currency, confidence: 0.98 };
+      }
+    }
+
+    // Priority 2: Standard Grand Total / Total keywords
     const totalKeywords = [
       'grand total',
       'total amount',
@@ -288,7 +300,7 @@ export class TesseractOcrProvider implements IOcrProvider {
       const lower = line.toLowerCase();
       for (const kw of totalKeywords) {
         if (lower.includes(kw)) {
-          const numMatch = line.match(/(?:[$₹€£A-Z]{0,3})\s*([\d,]+\.\d{2})/i) || line.match(/([\d,]+\.\d{2})/);
+          const numMatch = line.match(/(?:[$₹€£A-Z%*z3]{0,3})\s*([\d,]+\.?\d{0,2})/i);
           if (numMatch) {
             const parsed = this.parseMonetaryValue(numMatch[1]);
             if (parsed > 0) {
@@ -299,12 +311,12 @@ export class TesseractOcrProvider implements IOcrProvider {
       }
     }
 
-    // Fallback highest decimal amount
-    const allDecimals = fullText.match(/\b\d{1,6}\.\d{2}\b/g);
-    if (allDecimals && allDecimals.length > 0) {
-      const nums = allDecimals.map((n) => this.parseMonetaryValue(n)).filter((n) => n > 0 && n < 1000000);
-      if (nums.length > 0) {
-        return { totalAmount: Math.max(...nums), currency, confidence: 0.75 };
+    // Priority 3: Large Hero Number at top (e.g. "₹29" or "229" after date)
+    const heroMatch = fullText.match(/(?:Completed|Bike|Ride|Invoice)\s*\n+\s*[₹%*2]?\s*(\d{2,5})\b/i);
+    if (heroMatch) {
+      const parsed = parseFloat(heroMatch[1]);
+      if (parsed > 0 && parsed < 100000) {
+        return { totalAmount: parsed, currency, confidence: 0.90 };
       }
     }
 
@@ -321,20 +333,17 @@ export class TesseractOcrProvider implements IOcrProvider {
     let taxPercentage: number | undefined = undefined;
     let confidence = 0.7;
 
-    // 15-character Indian GSTIN
     const gstMatch = fullText.match(/\b\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}\b/);
     if (gstMatch) {
       gstNumber = gstMatch[0];
       confidence = 0.95;
     }
 
-    // Tax percentage (e.g. 18%, 12%, 5%)
     const pctMatch = fullText.match(/\b(5|12|18|28)\s*%\s*(?:GST|Tax|VAT)?\b/i);
     if (pctMatch) {
       taxPercentage = parseInt(pctMatch[1], 10);
     }
 
-    // Tax amount
     const taxKeywords = ['tax amount', 'cgst', 'sgst', 'igst', 'total tax', 'vat amount', 'sales tax', 'tax'];
     for (const line of lines) {
       const lower = line.toLowerCase();
@@ -360,58 +369,61 @@ export class TesseractOcrProvider implements IOcrProvider {
   private suggestCategory(merchant: string, fullText: string): string {
     const text = `${merchant} ${fullText}`.toLowerCase();
 
-    // API Providers
-    if (/openai|anthropic|cohere|replicate|twilio|sendgrid|stripe|resend|postman|gemini api|aws bedrock/i.test(text)) {
-      return 'API';
-    }
-    // Subscriptions & Cloud Services
-    if (/aws|amazon web services|azure|google cloud|digitalocean|cloudflare|hosting|ec2|s3|heroku|vercel/i.test(text)) {
-      return 'Cloud Services';
-    }
-    if (/github|slack|zoom|figma|jetbrains|adobe|jira|atlassian|notion|saas|subscription|microsoft 365/i.test(text)) {
-      return 'Software Subscriptions';
-    }
-    // Travel & Transit
-    if (/uber|lyft|ola|grab|taxi|cab|ride|transit|toll|metro/i.test(text)) {
+    // Ride / Taxi (Bike, Auto, Cab, Uber, Rapido, Ola)
+    if (/bike|ride|taxi|cab|uber|ola|rapido|transit|fare|driver|kms|mins/i.test(text)) {
       return 'Taxi';
     }
+    // Travel
     if (/airline|flight|indigo|air india|emirates|delta|airway|train|irctc|railway|boarding/i.test(text)) {
       return 'Travel';
     }
-    // Meals & Food
+    // Meals & Dining
     if (/restaurant|cafe|coffee|starbucks|mcdonald|food|dining|lunch|dinner|breakfast|swiggy|zomato|bistro|catering/i.test(text)) {
       return 'Meals';
     }
-    // Lodging
+    // Cloud & Subscriptions
+    if (/aws|amazon web services|azure|google cloud|digitalocean|cloudflare|hosting|ec2|s3/i.test(text)) {
+      return 'Cloud Services';
+    }
+    if (/github|slack|zoom|figma|jetbrains|adobe|jira|atlassian|notion|saas|subscription/i.test(text)) {
+      return 'Software Subscriptions';
+    }
     if (/hotel|inn|resort|marriott|hyatt|hilton|radisson|stay|lodging|airbnb/i.test(text)) {
       return 'Hotel & Lodging';
-    }
-    // Fuel & Mileage
-    if (/shell|bp|petro|fuel|gas|petrol|diesel|fueling|chevron|exxon/i.test(text)) {
-      return 'Fuel & Mileage';
-    }
-    // Office Supplies
-    if (/staples|office|stationery|paper|desk|printer|cartridge|hardware|supplies/i.test(text)) {
-      return 'Office Supplies';
     }
 
     return 'Other';
   }
 
   private extractInvoiceNumber(fullText: string, originalFilename: string): string {
-    const invMatch = fullText.match(/(?:Invoice|Receipt|Bill|Order|Ref|INV)[#:\s-]*([A-Za-z0-9-_/]{4,20})/i);
+    // 1. Match Ride ID #RD17853975442578790
+    const rideMatch = fullText.match(/Ride\s+ID\s*#?([A-Za-z0-9-_/]{8,30})/i) || fullText.match(/#(RD\d{10,25})/i);
+    if (rideMatch && rideMatch[1]) {
+      return rideMatch[1].trim();
+    }
+
+    // 2. Match standard Invoice / Receipt #
+    const invMatch = fullText.match(/(?:Invoice|Receipt|Bill|Order|Ref|INV)[#:\s-]*([A-Za-z0-9-_/]{4,25})/i);
     if (invMatch && invMatch[1]) {
       return invMatch[1].trim();
     }
+
     return `INV-${Date.now().toString().slice(-6)}`;
   }
 
-  private extractContactDetails(
-    lines: string[],
+  private extractLocationAndContact(
+    cleanLines: string[],
     fullText: string
-  ): { vendorPhone?: string; vendorEmail?: string; vendorAddress?: string; billingAddress?: string } {
+  ): { vendorPhone?: string; vendorEmail?: string; vendorAddress?: string; billingAddress?: string; location?: string } {
     let vendorPhone: string | undefined = undefined;
     let vendorEmail: string | undefined = undefined;
+    let location: string | undefined = undefined;
+
+    // Detect Major Cities / Locations
+    const locMatch = fullText.match(/(?:Noida|Bengaluru|Bangalore|Delhi|Mumbai|Gurugram|Gurgaon|Hyderabad|Chennai|Pune|Kolkata|Ahmedabad|Jaipur)(?:,\s*[A-Za-z\s]+)?(?:,\s*India)?/i);
+    if (locMatch) {
+      location = locMatch[0].replace(/\s+/g, ' ').trim();
+    }
 
     const phoneMatch = fullText.match(/\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/);
     if (phoneMatch) {
@@ -423,7 +435,7 @@ export class TesseractOcrProvider implements IOcrProvider {
       vendorEmail = emailMatch[0];
     }
 
-    return { vendorPhone, vendorEmail };
+    return { vendorPhone, vendorEmail, location };
   }
 
   private detectPaymentMethod(fullText: string): string {
@@ -435,19 +447,51 @@ export class TesseractOcrProvider implements IOcrProvider {
   }
 
   private extractLineItems(
-    lines: string[],
+    cleanLines: string[],
+    fullText: string,
     totalAmount: number,
     taxAmount: number
   ): StructuredLineItem[] {
     const items: StructuredLineItem[] = [];
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    // Specific match for Ride Charge (e.g. "Ride Charge 22.18" or "Ride Charge 32218")
+    const rideChargeMatch = fullText.match(/Ride\s+Charge\s*[%*₹$€£z30-9]*?(\d+\.\d{2}|\d{2,4})/i);
+    const bookingFeeMatch = fullText.match(/(?:Booking Fees|Convenience Charges)[^\d]*?(\d+\.\d{2})/i);
+
+    if (bookingFeeMatch) {
+      const feeVal = parseFloat(bookingFeeMatch[1]);
+      const mainVal = totalAmount > feeVal ? Math.round((totalAmount - feeVal) * 100) / 100 : 0;
+
+      if (mainVal > 0) {
+        items.push({
+          id: 'li_1',
+          description: 'Ride Charge',
+          quantity: 1,
+          unitPrice: mainVal,
+          lineTotal: mainVal,
+          tax: 0,
+        });
+      }
+
+      items.push({
+        id: `li_${items.length + 1}`,
+        description: 'Booking Fees & Convenience Charges',
+        quantity: 1,
+        unitPrice: feeVal,
+        lineTotal: feeVal,
+        tax: 0,
+      });
+
+      return items;
+    }
+
+    // Standard item rows parsing
+    for (let i = 0; i < cleanLines.length; i++) {
+      const line = cleanLines[i];
       if (/total|subtotal|balance|tax invoice|amount due|thank you/i.test(line)) {
         continue;
       }
 
-      // Pattern: "Item Description   1 x ₹3000   ₹3000.00" or "Description   Amount"
       const match = line.match(/^([A-Za-z0-9\s,&.-]{3,40})\s+(?:(\d+)\s*[xX]\s*)?([$₹€£A-Z]{0,3})\s*([\d,]+\.\d{2})$/);
       if (match) {
         const desc = match[1].trim();

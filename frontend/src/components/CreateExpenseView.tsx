@@ -300,8 +300,18 @@ export const CreateExpenseView: React.FC = () => {
         if (extracted.referenceNumber) setReferenceNumber(extracted.referenceNumber);
         if (extracted.businessPurpose) setBusinessPurpose(extracted.businessPurpose);
 
+        if (extracted.vendorAddress || (extracted as any).location) setLocation(extracted.vendorAddress || (extracted as any).location);
+        if (extracted.detectedPaymentMethod) setPaymentMethod(extracted.detectedPaymentMethod);
+
         if (extracted.lineItems && extracted.lineItems.length > 0) {
-          setLineItems(extracted.lineItems);
+          setLineItems(
+            extracted.lineItems.map((item: any, idx: number) => ({
+              id: item.id || `li_${idx + 1}`,
+              description: item.description,
+              amount: item.lineTotal !== undefined ? item.lineTotal : (item.amount || 0),
+              taxAmount: item.tax !== undefined ? item.tax : (item.taxAmount || 0),
+            }))
+          );
         } else if (extracted.amount > 0) {
           setLineItems([
             {
