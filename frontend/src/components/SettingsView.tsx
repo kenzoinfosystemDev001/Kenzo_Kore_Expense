@@ -101,6 +101,7 @@ export const SettingsView: React.FC = () => {
         body: JSON.stringify({
           name,
           email,
+          password,
           role,
           designation,
           departmentId,
@@ -110,10 +111,11 @@ export const SettingsView: React.FC = () => {
       // Clear inputs
       setName('');
       setEmail('');
+      setPassword('');
       setDesignation('');
       setAvatar('');
       setShowAddForm(false);
-      alert(`Employee ${name} added successfully! Credentials registered in PostgreSQL database via Prisma.`);
+      alert(`Employee ${name} created successfully with active credentials! They can log in immediately.`);
     } catch {
       alert('Failed to register employee.');
     }

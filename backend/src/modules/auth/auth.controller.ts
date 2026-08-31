@@ -488,7 +488,19 @@ export class AuthController {
       },
     });
 
-    // Create user in PENDING_ACTIVATION state
+    // Determine Password & Account Status:
+    // If admin sets a password (>= 6 chars), activate account immediately with zero OTP required
+    let passwordHash: string | undefined = undefined;
+    let accountStatus: 'ACTIVE' | 'PENDING_ACTIVATION' = 'PENDING_ACTIVATION';
+    let activatedAt: Date | null = null;
+
+    if (body.password && body.password.trim().length >= 6) {
+      passwordHash = await this.passwordService.hashPassword(body.password.trim());
+      accountStatus = 'ACTIVE';
+      activatedAt = new Date();
+    }
+
+    // Create user in PostgreSQL database
     const user = await this.prisma.user.upsert({
       where: { email: cleanEmail },
       update: {
@@ -497,6 +509,7 @@ export class AuthController {
         role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
         avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
         employeeIdentityId: identity.id,
+        ...(passwordHash ? { passwordHash, status: 'ACTIVE', activatedAt } : {}),
       },
       create: {
         email: cleanEmail,
@@ -504,19 +517,33 @@ export class AuthController {
         designation: body.designation || 'Corporate Staff',
         role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
         avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
-        status: 'PENDING_ACTIVATION',
+        status: accountStatus,
+        passwordHash,
+        activatedAt,
         departmentId: defaultDept.id,
         costCenterId: defaultCostCenter.id,
         employeeIdentityId: identity.id,
       },
     });
 
-    // Send activation OTP email to the registered email address
-    await this.verificationService.createChallenge(cleanEmail, 'ACTIVATION').catch(() => null);
+    // Only dispatch OTP if NO initial password was set by admin
+    if (!passwordHash) {
+      await this.verificationService.createChallenge(cleanEmail, 'ACTIVATION').catch(() => null);
+      return {
+        message: `Employee ${user.name} successfully registered. Activation OTP dispatched to ${cleanEmail}.`,
+        user,
+      };
+    }
 
     return {
-      message: `Employee ${user.name} successfully registered. Activation OTP dispatched to ${cleanEmail}.`,
-      user,
+      message: `Employee ${user.name} successfully created with active credentials. They can log in immediately with their password.`,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
     };
   }
 
