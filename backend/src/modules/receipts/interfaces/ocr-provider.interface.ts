@@ -1,20 +1,39 @@
+export interface StructuredLineItem {
+  id: string;
+  description: string;
+  quantity?: number;
+  unitPrice?: number;
+  tax?: number;
+  lineTotal: number;
+}
+
 export interface ExtractedReceiptData {
   title: string;
   merchant: string;
+  invoiceNumber: string;
+  referenceNumber: string;
+  invoiceDate: string;
+  date: string;
+  dueDate?: string;
+  subtotal: number;
+  tax: number;
+  taxAmount: number;
+  taxPercentage?: number;
+  totalAmount: number;
   amount: number;
   currency: string;
-  date: string;
-  category: string;
-  taxAmount: number;
+  gstin: string;
   gstNumber: string;
-  referenceNumber: string;
+  description: string;
   businessPurpose: string;
-  lineItems: Array<{
-    id: string;
-    description: string;
-    amount: number;
-    taxAmount: number;
-  }>;
+  suggestedCategory: string;
+  category: string;
+  detectedPaymentMethod?: string;
+  vendorAddress?: string;
+  billingAddress?: string;
+  vendorPhone?: string;
+  vendorEmail?: string;
+  lineItems: StructuredLineItem[];
   confidence: {
     merchant: number;
     amount: number;
@@ -22,6 +41,8 @@ export interface ExtractedReceiptData {
     taxAmount: number;
     overall: number;
   };
+  isScannedPdf?: boolean;
+  pageCount?: number;
   rawText: string;
 }
 

@@ -501,22 +501,37 @@ export const CreateExpenseView: React.FC = () => {
                 </select>
               </div>
 
-              {/* Amount */}
+              {/* Currency & Amount */}
               <div className="space-y-1.5">
                 <label className="text-xs text-gray-400 flex items-center justify-between">
-                  <span>Total Amount ({currency}) *</span>
+                  <span>Total Amount *</span>
                   {ocrMetadata && <span className="text-[10px] text-[#00C8FF] font-bold">⚡ {Math.round(ocrMetadata.confidence.amount * 100)}% Conf.</span>}
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  value={amount || ''}
-                  onChange={e => setAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-[#00C8FF]/50"
-                  required
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={currency}
+                    onChange={e => setCurrency(e.target.value)}
+                    className="w-28 bg-[#090A0F] border border-white/[0.06] rounded-xl px-2 py-2.5 text-xs text-[#00E0FF] font-bold focus:outline-none focus:border-[#00C8FF]/50"
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    <option value="JPY">JPY (¥)</option>
+                  </select>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    value={amount || ''}
+                    onChange={e => setAmount(parseFloat(e.target.value) || 0)}
+                    className="flex-1 bg-[#090A0F]/50 border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-[#00C8FF]/50"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Date */}

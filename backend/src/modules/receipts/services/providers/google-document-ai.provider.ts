@@ -73,7 +73,7 @@ export class GoogleDocumentAiProvider implements IOcrProvider {
         } else if (type.includes('total_amount') || type.includes('net_amount')) {
           const num = parseFloat(text.replace(/[^0-9.]/g, ''));
           if (!isNaN(num)) {
-            amount = num;
+            amount = Math.round(num * 100) / 100;
             amountConf = conf;
           }
         } else if (type.includes('receipt_date') || type.includes('invoice_date')) {
@@ -82,33 +82,46 @@ export class GoogleDocumentAiProvider implements IOcrProvider {
         } else if (type.includes('vat_amount') || type.includes('tax_amount')) {
           const num = parseFloat(text.replace(/[^0-9.]/g, ''));
           if (!isNaN(num)) {
-            taxAmount = num;
+            taxAmount = Math.round(num * 100) / 100;
             taxConf = conf;
           }
         } else if (type.includes('currency')) {
-          currency = text;
+          currency = text.toUpperCase();
         }
       }
 
+      const subtotal = Math.max(0, Math.round((amount - taxAmount) * 100) / 100);
       const overall = parseFloat(((merchantConf + amountConf + dateConf + taxConf) / 4).toFixed(2));
+      const refNumber = `DOCAI-${Date.now().toString().slice(-6)}`;
+      const businessPurpose = `Business expense verified via Google Document AI parser.`;
 
       return {
         title: `${merchant} - Expense Claim`,
         merchant,
+        invoiceNumber: refNumber,
+        referenceNumber: refNumber,
+        invoiceDate: date,
+        date,
+        subtotal,
+        tax: taxAmount,
+        taxAmount,
+        totalAmount: amount,
         amount,
         currency,
-        date,
-        category: 'Meals',
-        taxAmount,
+        gstin: '',
         gstNumber: '',
-        referenceNumber: `DOCAI-${Date.now().toString().slice(-6)}`,
-        businessPurpose: `Business expense verified via Google Document AI parser.`,
+        description: businessPurpose,
+        businessPurpose,
+        suggestedCategory: 'Meals',
+        category: 'Meals',
         lineItems: [
           {
             id: 'li_1',
             description: 'Item parsed by Document AI',
-            amount,
-            taxAmount,
+            quantity: 1,
+            unitPrice: amount,
+            lineTotal: amount,
+            tax: taxAmount,
           },
         ],
         confidence: {
