@@ -21,6 +21,7 @@ export class EmailService {
         host,
         port,
         secure: port === 465, // SSL for 465
+        family: 4, // Force IPv4 to prevent ENETUNREACH on Render/Cloud containers
         auth: { user, pass },
         tls: {
           rejectUnauthorized: false,
@@ -29,8 +30,8 @@ export class EmailService {
         connectionTimeout: 20000,
         greetingTimeout: 20000,
         socketTimeout: 30000,
-      });
-      this.logger.log(`Direct SSL Cloud SMTP Transport configured for: ${user} (${host}:${port})`);
+      } as any);
+      this.logger.log(`Direct SSL Cloud SMTP Transport configured for: ${user} (${host}:${port}, IPv4 forced)`);
     } else {
       this.logger.warn(`SMTP credentials not configured. Verification codes will be recorded to server logs.`);
     }

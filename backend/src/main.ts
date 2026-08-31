@@ -1,6 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import * as dns from 'dns';
+
+// Force IPv4 resolution for Render / Cloud hosting environments
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
