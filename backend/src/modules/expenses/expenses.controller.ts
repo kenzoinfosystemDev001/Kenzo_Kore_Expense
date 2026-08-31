@@ -15,12 +15,22 @@ import { PrismaService } from '../../database/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/v1/expenses')
+@UseGuards(JwtAuthGuard)
 export class ExpensesController {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Get Expenses scoped to user role:
+   * - EMPLOYEE: sees only their own expense claims
+   * - ADMIN / SUPER_ADMIN: sees all enterprise expense claims
+   */
   @Get()
-  async getExpenses() {
+  async getExpenses(@Req() req: any) {
+    const user = req.user;
+    const isPrivileged = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
+
     return this.prisma.expense.findMany({
+      where: isPrivileged ? {} : { employeeId: user.id },
       include: {
         employee: true,
         items: true,
@@ -31,7 +41,6 @@ export class ExpensesController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   async createExpense(@Body() body: any, @Req() req: any) {
     const status = body.isDraft ? 'DRAFT' : 'SUBMITTED';
     const user = req.user;
@@ -71,13 +80,12 @@ export class ExpensesController {
     });
 
     return {
-      message: 'Expense created in Neon database',
+      message: 'Expense created in database',
       expense: newExpense,
     };
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
   async updateExpense(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     const expense = await this.prisma.expense.findUnique({ where: { id } });
     if (!expense) throw new NotFoundException('Expense not found');
@@ -86,7 +94,7 @@ export class ExpensesController {
       throw new ForbiddenException('Not authorized to edit this expense');
     }
 
-    // Drop old items
+    // Drop old items and recreate
     await this.prisma.expenseItem.deleteMany({ where: { expenseId: id } });
 
     const updated = await this.prisma.expense.update({
@@ -121,13 +129,12 @@ export class ExpensesController {
     });
 
     return {
-      message: 'Expense updated in Postgres database',
+      message: 'Expense updated in database',
       expense: updated,
     };
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
   async deleteExpense(@Param('id') id: string, @Req() req: any) {
     const expense = await this.prisma.expense.findUnique({ where: { id } });
     if (!expense) throw new NotFoundException('Expense not found');
@@ -146,7 +153,7 @@ export class ExpensesController {
     });
 
     return {
-      message: `Expense claim ${id} deleted from Neon database`,
+      message: `Expense claim ${id} deleted from database`,
     };
   }
 }

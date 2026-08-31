@@ -1,9 +1,11 @@
-import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException, UseGuards } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { v2 as cloudinary } from 'cloudinary';
 import * as streamifier from 'streamifier';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/v1/receipts')
+@UseGuards(JwtAuthGuard)
 export class ReceiptsController {
   constructor() {
     cloudinary.config({
@@ -79,4 +81,3 @@ export class ReceiptsController {
     };
   }
 }
-
