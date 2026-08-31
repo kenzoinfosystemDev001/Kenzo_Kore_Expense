@@ -25,7 +25,7 @@ export class VerificationService {
 
   /**
    * Generate, store, and dispatch a secure verification challenge (OTP) for activation or password reset.
-   * STRICT GUARANTEE: Never reports success unless the email is successfully dispatched via Google Gmail API.
+   * STRICT GUARANTEE: Never reports success unless the email is successfully dispatched via SMTP.
    */
   async createChallenge(email: string, purpose: 'ACTIVATION' | 'PASSWORD_RESET'): Promise<{ success: boolean; message: string; expiresInSeconds: number }> {
     const cleanEmail = email.trim().toLowerCase();
@@ -74,7 +74,7 @@ export class VerificationService {
 
     this.logger.log(`[VerificationService] OTP created for email: ${cleanEmail}`);
 
-    // 4. Dispatch Email via Google Gmail API (HTTPS :443)
+    // 4. Dispatch Email via Active Provider (Resend HTTPS :443)
     const emailDelivered = await this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose);
 
     if (!emailDelivered) {
