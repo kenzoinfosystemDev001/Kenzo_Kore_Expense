@@ -26,6 +26,7 @@ interface AppContextProps {
   forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   fetchDirectoryStatus: () => Promise<any>;
+  addUser: (userData: { name: string; email: string; password?: string; role?: string; designation?: string; departmentId?: string; avatar?: string }) => Promise<{ success: boolean; message?: string; user?: any }>;
   deleteUser: (userId: string) => Promise<void>;
   updateUserPassword: (userId: string, newPassword: string) => Promise<boolean>;
   updateUserAvatar: (userId: string, avatarUrl: string) => Promise<boolean>;
@@ -515,6 +516,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return null;
   };
 
+  const addUser = async (userData: {
+    name: string;
+    email: string;
+    password?: string;
+    role?: string;
+    designation?: string;
+    departmentId?: string;
+    avatar?: string;
+  }): Promise<{ success: boolean; message?: string; user?: any }> => {
+    try {
+      const token = localStorage.getItem('kenzo_kore_jwt');
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          name: userData.name,
+          email: userData.email,
+          password: userData.password && userData.password.trim() ? userData.password.trim() : 'Kenzo@2026',
+          role: userData.role || 'Employee',
+          designation: userData.designation || 'Corporate Staff',
+          departmentId: userData.departmentId,
+          avatar: userData.avatar && userData.avatar.trim() ? userData.avatar.trim() : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        addAuditLog('EMPLOYEE_REGISTERED', `Admin registered employee ${userData.name} (${userData.email}) with active status`);
+        notifyRealtimeSync();
+        await refreshData();
+        return { success: true, message: data.message, user: data.user };
+      } else {
+        return { success: false, message: data.message || 'Failed to register employee' };
+      }
+    } catch (err: any) {
+      console.error('Add user error: ', err);
+      return { success: false, message: err.message || 'Network error while creating employee' };
+    }
+  };
+
   const deleteUser = async (userId: string) => {
     try {
       const token = localStorage.getItem('kenzo_kore_jwt');
@@ -781,6 +824,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         forgotPassword,
         resetPassword,
         fetchDirectoryStatus,
+        addUser,
         deleteUser,
         updateUserPassword,
         updateUserAvatar,

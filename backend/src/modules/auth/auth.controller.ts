@@ -446,23 +446,36 @@ export class AuthController {
 
   /**
    * Register a new employee (Admin/SuperAdmin endpoint)
-   * Creates an unactivated user / EmployeeIdentity and automatically dispatches an activation OTP to the employee's registered email
+   * Creates an immediately ACTIVE user in PostgreSQL with password and zero OTP/activation required
    */
   @Post('register')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN')
   async registerEmployee(@Body() body: any) {
-    const cleanEmail = body.email.trim().toLowerCase();
-
-    // Check if user already exists and active
-    const existing = await this.prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (existing && existing.status === 'ACTIVE' && existing.passwordHash) {
-      throw new BadRequestException('A user with this email address already exists and is active.');
+    if (!body.email || !body.name) {
+      throw new BadRequestException('Employee name and email address are required.');
     }
 
-    // Resolve Department & Cost Center
-    const defaultDept = await this.prisma.department.findFirst() || { id: 'dept_eng', name: 'Operations' };
-    const defaultCostCenter = await this.prisma.costCenter.findFirst() || { id: 'cc_dev', name: 'Corporate' };
+    const cleanEmail = body.email.trim().toLowerCase();
+    const normalizedRole = (body.role || '').toUpperCase().includes('SUPER')
+      ? 'SUPER_ADMIN'
+      : (body.role || '').toUpperCase().includes('ADMIN')
+      ? 'ADMIN'
+      : 'EMPLOYEE';
+
+    // Resolve Department & Cost Center safely
+    let defaultDept = await this.prisma.department.findFirst();
+    if (!defaultDept) {
+      defaultDept = await this.prisma.department.create({
+        data: { id: 'dept_eng', name: 'Engineering & Operations', code: 'ENG', budgetLimit: 500000.0 },
+      });
+    }
+    let defaultCostCenter = await this.prisma.costCenter.findFirst();
+    if (!defaultCostCenter) {
+      defaultCostCenter = await this.prisma.costCenter.create({
+        data: { id: 'cc_dev', name: 'Corporate Cost Center', code: 'CORP' },
+      });
+    }
 
     // Upsert EmployeeIdentity
     const identity = await this.prisma.employeeIdentity.upsert({
@@ -500,7 +513,7 @@ export class AuthController {
       update: {
         name: body.name,
         designation: body.designation || 'Corporate Staff',
-        role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
+        role: normalizedRole,
         avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
         employeeIdentityId: identity.id,
         passwordHash,
@@ -512,7 +525,7 @@ export class AuthController {
         email: cleanEmail,
         name: body.name,
         designation: body.designation || 'Corporate Staff',
-        role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
+        role: normalizedRole,
         avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
         status: 'ACTIVE',
         passwordHash,
@@ -530,8 +543,11 @@ export class AuthController {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.role === 'ADMIN' ? 'Admin' : 'Employee',
+        designation: user.designation,
         status: user.status,
+        joiningDate: user.joiningDate ? user.joiningDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        avatar: user.avatar,
       },
     };
   }

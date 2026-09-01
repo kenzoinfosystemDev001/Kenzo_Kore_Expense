@@ -22,7 +22,7 @@ import {
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const { policies, budgets, updatePolicy, users, deleteUser, updateUserAvatar, currentUser, openPasswordModal, theme, toggleTheme } = useApp();
+  const { policies, budgets, updatePolicy, users, addUser, deleteUser, updateUserAvatar, currentUser, openPasswordModal, theme, toggleTheme } = useApp();
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -90,25 +90,17 @@ export const SettingsView: React.FC = () => {
       alert('Please fill in Name, Email, and Designation.');
       return;
     }
-    try {
-      const token = localStorage.getItem('kenzo_kore_jwt');
-      await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          role,
-          designation,
-          departmentId,
-          avatar: avatar && avatar.trim() ? avatar.trim() : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'
-        })
-      });
-      // Clear inputs
+    const res = await addUser({
+      name,
+      email,
+      password: password || 'Kenzo@2026',
+      role,
+      designation,
+      departmentId,
+      avatar: avatar && avatar.trim() ? avatar.trim() : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'
+    });
+
+    if (res.success) {
       setName('');
       setEmail('');
       setPassword('');
@@ -116,8 +108,8 @@ export const SettingsView: React.FC = () => {
       setAvatar('');
       setShowAddForm(false);
       alert(`Employee ${name} created successfully with active credentials! They can log in immediately.`);
-    } catch {
-      alert('Failed to register employee.');
+    } else {
+      alert(`Error creating employee: ${res.message || 'Failed to register employee'}`);
     }
   };
 
