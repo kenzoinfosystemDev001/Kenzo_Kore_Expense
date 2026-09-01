@@ -211,7 +211,7 @@ model Expense {
   invoiceUrl       String?
   gstNumber        String?
   taxAmount        Float             @default(0.0)
-  referenceNumber  String?           @unique
+  referenceNumber  String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   items            ExpenseItem[]
@@ -221,6 +221,7 @@ model Expense {
 
   @@index([employeeId, status, createdAt])
   @@index([status])
+  @@index([referenceNumber])
   @@map("expenses")
 }
 

@@ -488,19 +488,13 @@ export class AuthController {
       },
     });
 
-    // Determine Password & Account Status:
-    // If admin sets a password (>= 6 chars), activate account immediately with zero OTP required
-    let passwordHash: string | undefined = undefined;
-    let accountStatus: 'ACTIVE' | 'PENDING_ACTIVATION' = 'PENDING_ACTIVATION';
-    let activatedAt: Date | null = null;
+    // Determine Initial Password & Enforce Active Account Status (Zero OTP / Zero Activation Needed):
+    const rawPassword = body.password && body.password.trim().length >= 4 ? body.password.trim() : 'Kenzo@2026';
+    const passwordHash = await this.passwordService.hashPassword(rawPassword);
+    const activatedAt = new Date();
+    const emailVerifiedAt = new Date();
 
-    if (body.password && body.password.trim().length >= 6) {
-      passwordHash = await this.passwordService.hashPassword(body.password.trim());
-      accountStatus = 'ACTIVE';
-      activatedAt = new Date();
-    }
-
-    // Create user in PostgreSQL database
+    // Create / Update user in PostgreSQL database as immediately ACTIVE
     const user = await this.prisma.user.upsert({
       where: { email: cleanEmail },
       update: {
@@ -509,7 +503,10 @@ export class AuthController {
         role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
         avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
         employeeIdentityId: identity.id,
-        ...(passwordHash ? { passwordHash, status: 'ACTIVE', activatedAt } : {}),
+        passwordHash,
+        status: 'ACTIVE',
+        activatedAt,
+        emailVerifiedAt,
       },
       create: {
         email: cleanEmail,
@@ -517,26 +514,18 @@ export class AuthController {
         designation: body.designation || 'Corporate Staff',
         role: body.role === 'ADMIN' ? 'ADMIN' : body.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'EMPLOYEE',
         avatar: body.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
-        status: accountStatus,
+        status: 'ACTIVE',
         passwordHash,
         activatedAt,
+        emailVerifiedAt,
         departmentId: defaultDept.id,
         costCenterId: defaultCostCenter.id,
         employeeIdentityId: identity.id,
       },
     });
 
-    // Only dispatch OTP if NO initial password was set by admin
-    if (!passwordHash) {
-      await this.verificationService.createChallenge(cleanEmail, 'ACTIVATION').catch(() => null);
-      return {
-        message: `Employee ${user.name} successfully registered. Activation OTP dispatched to ${cleanEmail}.`,
-        user,
-      };
-    }
-
     return {
-      message: `Employee ${user.name} successfully created with active credentials. They can log in immediately with their password.`,
+      message: `Employee ${user.name} successfully created with active credentials. They can log in directly with their email and password without activation.`,
       user: {
         id: user.id,
         name: user.name,

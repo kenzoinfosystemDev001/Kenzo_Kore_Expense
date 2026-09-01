@@ -180,27 +180,29 @@ export class ExpensesController {
     const expense = await this.prisma.expense.findUnique({ where: { id } });
     if (!expense) throw new NotFoundException('Expense not found');
 
+    const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN';
+
     // Strict Ownership & Permission Enforcement
-    if (expense.employeeId !== req.user.id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+    if (expense.employeeId !== req.user.id && !isAdmin) {
       throw new ForbiddenException('Access denied: You are not authorized to delete another employee expense claim.');
     }
 
-    // Do not allow deleting approved or reimbursed claims
-    if (expense.status === 'APPROVED' || expense.status === 'REIMBURSED') {
+    // Regular non-admin employees cannot delete approved/reimbursed claims, but Admins have full database control
+    if (!isAdmin && (expense.status === 'APPROVED' || expense.status === 'REIMBURSED')) {
       throw new ForbiddenException('Cannot delete an expense claim that has already been approved or reimbursed.');
     }
 
-    await this.prisma.expenseItem.deleteMany({ where: { expenseId: id } });
-    await this.prisma.expenseApproval.deleteMany({ where: { expenseId: id } });
-    await this.prisma.reimbursement.deleteMany({ where: { expenseId: id } });
-    await this.prisma.expenseTag.deleteMany({ where: { expenseId: id } });
-
-    await this.prisma.expense.delete({
-      where: { id },
-    });
+    // Cascade delete all child associations safely in a transaction
+    await this.prisma.$transaction([
+      this.prisma.expenseItem.deleteMany({ where: { expenseId: id } }),
+      this.prisma.expenseApproval.deleteMany({ where: { expenseId: id } }),
+      this.prisma.reimbursement.deleteMany({ where: { expenseId: id } }),
+      this.prisma.expenseTag.deleteMany({ where: { expenseId: id } }),
+      this.prisma.expense.delete({ where: { id } }),
+    ]);
 
     return {
-      message: `Expense claim ${id} deleted from database`,
+      message: `Expense claim ${id} successfully deleted from database by ${isAdmin ? 'Administrator' : 'User'}`,
     };
   }
 }
