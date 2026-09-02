@@ -72,7 +72,7 @@ export class VerificationService {
       }
     });
 
-    this.logger.log(`[VerificationService] OTP created for email: ${cleanEmail}`);
+    this.logger.log(`[VerificationService] OTP created for email: ${cleanEmail} -> Code: [${rawOtp}]`);
 
     // 4. Dispatch Email via Active Provider (Resend HTTPS :443)
     const emailDelivered = await this.emailService.sendVerificationOtp(cleanEmail, rawOtp, purpose);
