@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../AppContext';
-import { Key, Lock, CheckCircle2, X, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Key, Lock, CheckCircle2, X, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface Props {
@@ -14,6 +14,8 @@ export const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -109,13 +111,21 @@ export const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
               <input
-                type="password"
+                type={showNewPassword ? 'text' : 'password'}
                 required
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Enter at least 6 characters"
-                className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-3.5 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
+                className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-10 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
               />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-2.5 text-gray-500 hover:text-[#00C8FF] transition p-1 cursor-pointer"
+                title={showNewPassword ? 'Hide password' : 'Show password'}
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -124,13 +134,21 @@ export const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <div className="relative">
               <ShieldCheck className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 required
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter new password"
-                className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-3.5 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
+                className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-10 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-2.5 text-gray-500 hover:text-[#00C8FF] transition p-1 cursor-pointer"
+                title={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

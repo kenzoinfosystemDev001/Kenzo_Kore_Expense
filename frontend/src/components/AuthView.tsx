@@ -14,7 +14,9 @@ import {
   UserCheck,
   Sparkles,
   Building2,
-  Briefcase
+  Briefcase,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -33,6 +35,7 @@ export const AuthView: React.FC = () => {
   // Sign In States
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
@@ -54,6 +57,8 @@ export const AuthView: React.FC = () => {
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [activationLoading, setActivationLoading] = useState(false);
   const [activationError, setActivationError] = useState('');
@@ -334,15 +339,23 @@ export const AuthView: React.FC = () => {
                   </button>
                 </div>
                 <div className="flex items-center gap-2.5 bg-[#030712]/80 border border-[#00C8FF]/15 rounded-xl px-3.5 py-2.5 text-gray-400 focus-within:border-[#00C8FF] transition-all duration-200">
-                  <Lock className="w-4 h-4 text-[#00C8FF]" />
+                  <Lock className="w-4 h-4 text-[#00C8FF] shrink-0" />
                   <input
-                    type="password"
+                    type={showLoginPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}
                     placeholder="Enter password"
-                    className="bg-transparent border-none text-xs w-full text-white placeholder-gray-500 font-sans focus:ring-0"
+                    className="bg-transparent border-none text-xs w-full text-white placeholder-gray-500 font-sans focus:ring-0 focus:outline-none"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="text-gray-500 hover:text-[#00C8FF] transition p-0.5 cursor-pointer shrink-0"
+                    title={showLoginPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4 text-[#00C8FF]" />}
+                  </button>
                 </div>
               </div>
 
@@ -534,13 +547,21 @@ export const AuthView: React.FC = () => {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-[#00C8FF] absolute left-3.5 top-3" />
                     <input
-                      type="password"
+                      type={showNewPassword ? 'text' : 'password'}
                       required
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-3.5 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
+                      className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-10 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-2.5 text-gray-500 hover:text-[#00C8FF] transition p-1 cursor-pointer"
+                      title={showNewPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -549,13 +570,21 @@ export const AuthView: React.FC = () => {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-[#00C8FF] absolute left-3.5 top-3" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       required
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
                       placeholder="Confirm password"
-                      className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-3.5 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
+                      className="w-full bg-[#030712] border border-[#00C8FF]/20 rounded-xl pl-10 pr-10 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-[#00C8FF] transition"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-2.5 text-gray-500 hover:text-[#00C8FF] transition p-1 cursor-pointer"
+                      title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
