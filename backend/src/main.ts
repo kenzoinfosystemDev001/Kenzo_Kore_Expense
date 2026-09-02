@@ -6,7 +6,7 @@ import { appConfig } from './config/env';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.disable('x-powered-by');
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
 
   app.useGlobalPipes(
     new ValidationPipe({
