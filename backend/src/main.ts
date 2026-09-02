@@ -20,22 +20,39 @@ async function bootstrap() {
   const corsOrigins = appConfig.corsOrigins;
   app.enableCors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) {
         callback(null, true);
         return;
       }
 
-      const allowed = corsOrigins.includes(origin) || corsOrigins.includes('*');
-      if (allowed) {
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const isAllowed =
+        corsOrigins.includes(cleanOrigin) ||
+        corsOrigins.includes('*') ||
+        /^https:\/\/.*\.vercel\.app$/.test(cleanOrigin);
+
+      if (isAllowed) {
         callback(null, true);
         return;
       }
 
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      console.warn(`[CORS] Rejected Origin: ${origin}`);
+      callback(null, false);
     },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'baggage',
+      'sentry-trace',
+    ],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   const port = appConfig.port;
