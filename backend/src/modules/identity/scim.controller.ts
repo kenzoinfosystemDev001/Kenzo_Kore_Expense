@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { ScimProvider, ScimUserResource } from './providers/scim.provider';
 import { PrismaService } from '../../database/prisma.service';
+import { appConfig } from '../../config/env';
 
 @Controller('api/v1/scim/v2')
 export class ScimController {
@@ -25,7 +26,7 @@ export class ScimController {
   ) {}
 
   private validateScimAuth(authHeader?: string) {
-    const configuredToken = process.env.SCIM_BEARER_TOKEN || 'kenzo_scim_provisioning_key_2026';
+    const configuredToken = appConfig.getScimToken();
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing or invalid SCIM Authorization Header');
     }

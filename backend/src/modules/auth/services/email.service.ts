@@ -54,8 +54,8 @@ export class ResendEmailProvider implements IEmailProvider {
 
     const fromAddress =
       options.from ||
-      process.env.EMAIL_FROM ||
-      process.env.RESEND_FROM ||
+      process.env.MAIL_FROM ||
+      process.env.SMTP_FROM ||
       'Kenzo Kore Security <onboarding@resend.dev>';
 
     this.logger.log('[EmailService] Provider=resend');
@@ -87,7 +87,7 @@ export class ResendEmailProvider implements IEmailProvider {
   async checkHealth(): Promise<EmailProviderHealth> {
     const apiKey = process.env.RESEND_API_KEY;
     const fromAddress =
-      process.env.EMAIL_FROM || process.env.RESEND_FROM || 'Kenzo Kore Security <onboarding@resend.dev>';
+      process.env.MAIL_FROM || process.env.RESEND_FROM || 'Kenzo Kore Security <onboarding@resend.dev>';
 
     return {
       provider: 'Resend',

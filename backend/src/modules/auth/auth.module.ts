@@ -8,12 +8,13 @@ import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
 import { EmailService, ResendEmailProvider, SmtpEmailProvider } from './services/email.service';
 import { RolesGuard } from './guards/roles.guard';
+import { appConfig } from '../../config/env';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'kenzo_kore_expense_secret_key_2026_production',
+      secret: appConfig.getJwtSecret(),
       signOptions: { expiresIn: '7d' },
     }),
     IdentityModule,
