@@ -7,7 +7,6 @@ import { ExpenseListView } from './components/ExpenseListView';
 import { CreateExpenseView } from './components/CreateExpenseView';
 import { ApprovalQueueView } from './components/ApprovalQueueView';
 import { AnalyticsView } from './components/AnalyticsView';
-import { AuditLogsView } from './components/AuditLogsView';
 import { SettingsView } from './components/SettingsView';
 import { AIChatAssistant } from './components/AIChatAssistant';
 import { ApprovedExpenseModal } from './components/ApprovedExpenseModal';
@@ -48,8 +47,6 @@ function App() {
         return <ApprovalQueueView />;
       case 'analytics':
         return <AnalyticsView />;
-      case 'audit-logs':
-        return <AuditLogsView />;
       case 'settings':
         return <SettingsView />;
       default:

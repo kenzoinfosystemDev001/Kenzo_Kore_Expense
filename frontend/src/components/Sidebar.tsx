@@ -8,8 +8,6 @@ import {
   CheckSquare,
   BarChart3,
   Settings,
-  ShieldCheck,
-  CreditCard,
   History,
   TrendingUp
 } from 'lucide-react';
@@ -32,9 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     { id: 'dashboard', name: 'Overview', icon: LayoutDashboard },
     { id: 'expenses', name: 'Expense Database', icon: Receipt },
     { id: 'approvals', name: 'Approval Queue', icon: CheckSquare },
-    { id: 'reimbursements', name: 'Reimbursements', icon: CreditCard },
     { id: 'analytics', name: 'Analytics', icon: BarChart3 },
-    { id: 'audit-logs', name: 'Audit Logs', icon: ShieldCheck },
     { id: 'settings', name: 'Settings', icon: Settings },
   ];
 

@@ -226,17 +226,17 @@ export const DashboardView: React.FC = () => {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isEmployee ? (
           <>
             {/* Card 1 */}
             <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pending Reimbursement</span>
+                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pending Claims</span>
                   <div className="mt-3 flex items-baseline gap-2">
                     <h3 className="text-xl font-extrabold text-white">₹{pendingReimbursement.toFixed(2)}</h3>
-                    <span className="text-[9px] text-gray-400 font-sans font-medium uppercase tracking-widest">In Queue</span>
+                    <span className="text-[9px] text-gray-400 font-sans font-medium uppercase tracking-widest">In Review</span>
                   </div>
                 </div>
                 <div className="p-2.5 bg-[#00A3FF]/10 rounded-xl text-[#00C8FF]">
@@ -245,7 +245,7 @@ export const DashboardView: React.FC = () => {
               </div>
               <div className="mt-3 text-[10px] text-gray-400 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3 text-[#00C8FF]" />
-                <span>Awaiting finance clearance</span>
+                <span>Awaiting approval clearance</span>
               </div>
             </div>
 
@@ -253,10 +253,10 @@ export const DashboardView: React.FC = () => {
             <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Reimbursed</span>
+                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Approved Claims</span>
                   <div className="mt-3 flex items-baseline gap-2">
                     <h3 className="text-xl font-extrabold text-emerald-400">₹{reimbursedTotal.toFixed(2)}</h3>
-                    <span className="text-[9px] text-gray-400 font-sans font-medium uppercase tracking-widest">Settled</span>
+                    <span className="text-[9px] text-gray-400 font-sans font-medium uppercase tracking-widest">Approved</span>
                   </div>
                 </div>
                 <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
@@ -264,7 +264,7 @@ export const DashboardView: React.FC = () => {
                 </div>
               </div>
               <div className="mt-3 text-[10px] text-gray-400 flex items-center gap-1">
-                <span>Direct transfers cleared</span>
+                <span>Verified by managers</span>
               </div>
             </div>
 
@@ -284,25 +284,7 @@ export const DashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* Card 4 */}
-            <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Policy Compliance</span>
-                  <h3 className={`text-xl font-extrabold mt-3 ${policyViolationsCount > 0 ? 'text-amber-500' : 'text-[#00C8FF]'}`}>
-                    {policyViolationsCount > 0 ? `${policyViolationsCount} Flagged` : '100% Compliant'}
-                  </h3>
-                </div>
-                <div className={`p-2.5 rounded-xl ${policyViolationsCount > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-[#00A3FF]/10 text-[#00C8FF]'}`}>
-                  <AlertOctagon className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="mt-3 text-[10px] text-gray-400 flex items-center gap-1">
-                <span>Automated engine checks</span>
-              </div>
-            </div>
-
-            {/* Card 5: Total Expense Bills (NEW) */}
+            {/* Card 4: Total Expense Bills */}
             <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group border border-[#00C8FF]/20 bg-gradient-to-tr from-[#00A3FF]/10 to-transparent">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
@@ -362,24 +344,6 @@ export const DashboardView: React.FC = () => {
             <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Company Reimbursed</span>
-                  <div className="mt-3 flex items-baseline gap-2">
-                    <h3 className="text-xl font-extrabold text-emerald-400">₹{companyReimbursed.toFixed(2)}</h3>
-                  </div>
-                </div>
-                <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="mt-3 text-[10px] text-gray-400 flex items-center gap-1">
-                <span>Direct transfers cleared</span>
-              </div>
-            </div>
-
-            {/* Admin Card 4 */}
-            <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
                   <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Active Employees</span>
                   <h3 className="text-xl font-extrabold text-white mt-3">{totalEmployeesCount}</h3>
                 </div>
@@ -392,7 +356,7 @@ export const DashboardView: React.FC = () => {
               </div>
             </div>
 
-            {/* Admin Card 5: Total Expense Bills (NEW) */}
+            {/* Admin Card 4: Total Expense Bills */}
             <div className="glass-panel p-5 rounded-2xl relative overflow-hidden group border border-[#00C8FF]/20 bg-gradient-to-tr from-[#00A3FF]/10 to-transparent">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
