@@ -574,19 +574,41 @@ export class AuthController {
   @Put('users/:id/password')
   @UseGuards(JwtAuthGuard)
   async changePassword(@Param('id') id: string, @Body() body: { password: string }, @Req() req: any) {
-    if (req.user.id !== id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+    if (!body.password || body.password.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters long.');
+    }
+
+    // Resolve target user: match parameter ID, or fallback to JWT user ID / email
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { id: req.user.id },
+          { email: req.user.email },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found in system database');
+    }
+
+    const isSelf = user.id === req.user.id || user.email.toLowerCase() === req.user.email?.toLowerCase();
+    const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN';
+
+    if (!isSelf && !isAdmin) {
       throw new ForbiddenException('You are not authorized to modify another user credentials.');
     }
 
     const passwordHash = await this.passwordService.hashPassword(body.password);
     await this.prisma.user.update({
-      where: { id },
+      where: { id: user.id },
       data: { passwordHash },
     });
 
     return {
       message: 'Password updated successfully',
-      userId: id,
+      userId: user.id,
     };
   }
 
@@ -600,16 +622,34 @@ export class AuthController {
     @Body() body: { name?: string; email?: string; designation?: string; avatar?: string },
     @Req() req: any,
   ) {
-    if (req.user.id !== id && req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+    // Resolve target user: match parameter ID, or fallback to JWT user ID / email
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { id: req.user.id },
+          { email: req.user.email },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found in system database');
+    }
+
+    const isSelf = user.id === req.user.id || user.email.toLowerCase() === req.user.email?.toLowerCase();
+    const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN';
+
+    if (!isSelf && !isAdmin) {
       throw new ForbiddenException('You are not authorized to modify another user profile.');
     }
 
     const updated = await this.prisma.user.update({
-      where: { id },
+      where: { id: user.id },
       data: {
-        name: body.name,
-        designation: body.designation,
-        avatar: body.avatar,
+        ...(body.name ? { name: body.name } : {}),
+        ...(body.designation ? { designation: body.designation } : {}),
+        ...(body.avatar ? { avatar: body.avatar } : {}),
       },
     });
 

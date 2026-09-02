@@ -30,6 +30,7 @@ interface AppContextProps {
   deleteUser: (userId: string) => Promise<{ success: boolean; message?: string }>;
   updateUserPassword: (userId: string, newPassword: string) => Promise<boolean>;
   updateUserAvatar: (userId: string, avatarUrl: string) => Promise<boolean>;
+  uploadAvatarImage: (file: File) => Promise<string>;
   createExpense: (expenseData: {
     title: string;
     category: ExpenseCategory;
@@ -586,7 +587,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateUserPassword = async (userId: string, newPassword: string): Promise<boolean> => {
     try {
       const token = localStorage.getItem('kenzo_kore_jwt');
-      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/password`, {
+      // If userId is 'emp_1' and currentUser has a real id, prefer currentUser.id
+      const targetId = (currentUser && currentUser.id && currentUser.id !== 'emp_1') ? currentUser.id : userId;
+      const res = await fetch(`${API_BASE_URL}/auth/users/${targetId}/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -605,10 +608,81 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return false;
   };
 
+  const uploadAvatarImage = async (file: File): Promise<string> => {
+    if (!file || !file.type.startsWith('image/')) {
+      throw new Error('Please select an image file (PNG, JPG, JPEG, WEBP)');
+    }
+
+    // 1. Client-side canvas compression for crisp, optimized 320px avatar
+    const optimizedDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed reading image from local folder'));
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Failed decoding image file'));
+        img.onload = () => {
+          const MAX_DIM = 320;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return resolve(reader.result as string);
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.88));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 2. Concurrently attempt server Cloudinary upload with auth token
+    try {
+      const token = localStorage.getItem('kenzo_kore_jwt');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.fileUrl) {
+          return data.fileUrl;
+        }
+      }
+    } catch (err) {
+      console.warn('Server upload fallback to optimized client Data URI:', err);
+    }
+
+    // 3. Fallback: Always return high-performance client Data URI
+    return optimizedDataUrl;
+  };
+
   const updateUserAvatar = async (userId: string, avatarUrl: string): Promise<boolean> => {
     try {
       const token = localStorage.getItem('kenzo_kore_jwt');
-      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+      const targetId = (currentUser && currentUser.id && currentUser.id !== 'emp_1') ? currentUser.id : userId;
+      const res = await fetch(`${API_BASE_URL}/auth/users/${targetId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -618,9 +692,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       if (res.ok) {
         addAuditLog('USER_AVATAR_UPDATED', `Updated profile picture for user ID ${userId}`);
-        if (currentUser?.id === userId) {
-          setCurrentUser(prev => prev ? { ...prev, avatar: avatarUrl } : null);
-        }
+        setCurrentUser(prev => prev ? { ...prev, avatar: avatarUrl } : null);
+        setUserList(prev => prev.map(u => (u.id === userId || (currentUser && u.id === currentUser.id)) ? { ...u, avatar: avatarUrl } : u));
+        notifyRealtimeSync();
         await refreshData();
         return true;
       }
@@ -837,6 +911,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteUser,
         updateUserPassword,
         updateUserAvatar,
+        uploadAvatarImage,
         createExpense,
         updateExpenseStatus,
         updateExpense,

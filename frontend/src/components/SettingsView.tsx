@@ -22,7 +22,7 @@ import {
 import { UserRole } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const { policies, budgets, updatePolicy, users, addUser, deleteUser, updateUserAvatar, currentUser, openPasswordModal, theme, toggleTheme } = useApp();
+  const { policies, budgets, updatePolicy, users, addUser, deleteUser, updateUserAvatar, uploadAvatarImage, currentUser, openPasswordModal, theme, toggleTheme } = useApp();
 
   // Add User Form States
   const [showAddForm, setShowAddForm] = useState(false);
@@ -34,43 +34,42 @@ export const SettingsView: React.FC = () => {
   const [departmentId, setDepartmentId] = useState('dept_eng');
   const [avatar, setAvatar] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingSelfAvatar, setUploadingSelfAvatar] = useState(false);
+
+  const handleSelfAvatarUpload = async (file: File) => {
+    if (!currentUser) return;
+    setUploadingSelfAvatar(true);
+    try {
+      const avatarUrl = await uploadAvatarImage(file);
+      await updateUserAvatar(currentUser.id, avatarUrl);
+      alert('Your profile photo has been successfully updated!');
+    } catch (err: any) {
+      console.error('Self avatar upload error:', err);
+      alert(err.message || 'Failed to update profile picture.');
+    } finally {
+      setUploadingSelfAvatar(false);
+    }
+  };
 
   const handleDeviceAvatarUpload = async (userId: string, file: File) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.fileUrl) {
-          await updateUserAvatar(userId, data.fileUrl);
-        }
-      }
-    } catch (err) {
+      const avatarUrl = await uploadAvatarImage(file);
+      await updateUserAvatar(userId, avatarUrl);
+      alert('User avatar successfully updated from device image.');
+    } catch (err: any) {
       console.error('Avatar device upload error:', err);
+      alert(err.message || 'Failed to update user avatar.');
     }
   };
 
   const handleFormAvatarUpload = async (file: File) => {
     setUploadingAvatar(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.fileUrl) {
-          setAvatar(data.fileUrl);
-        }
-      }
-    } catch (err) {
+      const avatarUrl = await uploadAvatarImage(file);
+      setAvatar(avatarUrl);
+    } catch (err: any) {
       console.error('Form avatar upload error:', err);
+      alert(err.message || 'Failed to load avatar image.');
     } finally {
       setUploadingAvatar(false);
     }
@@ -143,12 +142,17 @@ export const SettingsView: React.FC = () => {
         <div className="glass-panel p-6 rounded-3xl border border-[#00C8FF]/25 bg-gradient-to-r from-[#00A3FF]/10 via-[#00C8FF]/5 to-transparent space-y-4 shadow-[0_0_30px_rgba(0,163,255,0.15)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#00A3FF]/15 border border-[#00C8FF]/30 flex items-center justify-center text-[#00E0FF]">
-                <Key className="w-6 h-6" />
+              <div className="relative group shrink-0">
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-12 h-12 rounded-2xl object-cover border border-[#00C8FF]/30 shadow-[0_0_15px_rgba(0,163,255,0.2)]"
+                  style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px' }}
+                />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-white tracking-wide">My Security & Password Settings</h3>
+                  <h3 className="text-sm font-extrabold text-white tracking-wide">My Security & Profile Settings</h3>
                   <span className="text-[10px] bg-[#00C8FF]/10 text-[#00C8FF] border border-[#00C8FF]/20 px-2 py-0.5 rounded-full font-bold uppercase">
                     Self Service
                   </span>
@@ -159,13 +163,33 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            <button
-              onClick={openPasswordModal}
-              className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
-            >
-              <Lock className="w-4 h-4" />
-              <span>Change My Password</span>
-            </button>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <input
+                type="file"
+                id="settings-self-avatar-file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => e.target.files?.[0] && handleSelfAvatarUpload(e.target.files[0])}
+              />
+              <button
+                type="button"
+                disabled={uploadingSelfAvatar}
+                onClick={() => document.getElementById('settings-self-avatar-file')?.click()}
+                className="py-2.5 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-[#00C8FF]/30 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shrink-0 disabled:opacity-50"
+                title="Upload custom profile photo from device folders"
+              >
+                <UploadCloud className="w-4 h-4 text-[#00C8FF]" />
+                <span>{uploadingSelfAvatar ? 'Uploading...' : 'Upload Profile Photo'}</span>
+              </button>
+
+              <button
+                onClick={openPasswordModal}
+                className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-[#0077B6] via-[#00A3FF] to-[#00C8FF] hover:from-[#0088FF] hover:to-[#00E0FF] text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,163,255,0.3)] transition-all cursor-pointer flex items-center gap-2 shrink-0"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Change My Password</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

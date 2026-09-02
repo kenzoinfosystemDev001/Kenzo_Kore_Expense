@@ -19,26 +19,21 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
-  const { currentUser, expenses, logout, updateUserAvatar, openPasswordModal, theme, toggleTheme } = useApp();
+  const { currentUser, expenses, logout, updateUserAvatar, uploadAvatarImage, openPasswordModal, theme, toggleTheme } = useApp();
   const [showBellDropdown, setShowBellDropdown] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const handleHeaderAvatarUpload = async (file: File) => {
     if (!currentUser) return;
+    setUploadingAvatar(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API_BASE_URL}/receipts/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.fileUrl) {
-          await updateUserAvatar(currentUser.id, data.fileUrl);
-        }
-      }
-    } catch (err) {
+      const avatarUrl = await uploadAvatarImage(file);
+      await updateUserAvatar(currentUser.id, avatarUrl);
+    } catch (err: any) {
       console.error('Header avatar upload error:', err);
+      alert(err.message || 'Failed to upload avatar image from device');
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
