@@ -134,17 +134,34 @@ export const DashboardView: React.FC = () => {
 
   const filteredSpendList = getFilteredSpendExpenses();
 
-  // Map filtered expenses to Trend AreaChart
-  const dateMap: { [key: string]: number } = {};
-  filteredSpendList.forEach(e => {
-    const label = e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : 'Recent';
-    dateMap[label] = (dateMap[label] || 0) + e.amount;
-  });
-
-  // Accurate graph dataset generation without fake hardcoded July fallbacks when filtering
+  // Map filtered expenses to Trend AreaChart in strict ASCENDING chronological order (oldest -> newest)
   const getTrendChartData = () => {
-    if (Object.keys(dateMap).length > 0) {
-      return Object.keys(dateMap).map(d => ({ date: d, amount: dateMap[d] }));
+    // 1. Group expenses by ISO Date YYYY-MM-DD
+    const isoDateMap: { [isoKey: string]: { label: string; amount: number } } = {};
+
+    filteredSpendList.forEach(e => {
+      if (!e.date) return;
+      const rawDate = new Date(e.date);
+      if (isNaN(rawDate.getTime())) return;
+
+      // Extract ISO Date YYYY-MM-DD for accurate chronological sorting
+      const isoKey = e.date.includes('T') ? e.date.split('T')[0] : rawDate.toISOString().split('T')[0];
+      const label = rawDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+      if (!isoDateMap[isoKey]) {
+        isoDateMap[isoKey] = { label, amount: 0 };
+      }
+      isoDateMap[isoKey].amount += (e.amount || 0);
+    });
+
+    const sortedIsoKeys = Object.keys(isoDateMap).sort((a, b) => a.localeCompare(b));
+
+    if (sortedIsoKeys.length > 0) {
+      return sortedIsoKeys.map(isoKey => ({
+        date: isoDateMap[isoKey].label,
+        amount: Math.round(isoDateMap[isoKey].amount * 100) / 100,
+        fullDate: isoKey,
+      }));
     }
 
     if (selectedSpendDate) {
@@ -156,13 +173,9 @@ export const DashboardView: React.FC = () => {
       return [{ date: selectedPeriod, amount: 0 }];
     }
 
-    // Default empty overview if no expenses logged
+    // Default fallback only if no expenses logged yet
     return [
-      { date: 'Jul 02', amount: 45.90 },
-      { date: 'Jul 12', amount: 345.00 },
-      { date: 'Jul 25', amount: 120.00 },
-      { date: 'Jul 26', amount: 120.00 },
-      { date: 'Jul 28', amount: 1450.50 }
+      { date: 'Recent', amount: 0 }
     ];
   };
 
