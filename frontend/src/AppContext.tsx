@@ -27,7 +27,7 @@ interface AppContextProps {
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   fetchDirectoryStatus: () => Promise<any>;
   addUser: (userData: { name: string; email: string; password?: string; role?: string; designation?: string; departmentId?: string; avatar?: string }) => Promise<{ success: boolean; message?: string; user?: any }>;
-  deleteUser: (userId: string) => Promise<void>;
+  deleteUser: (userId: string) => Promise<{ success: boolean; message?: string }>;
   updateUserPassword: (userId: string, newPassword: string) => Promise<boolean>;
   updateUserAvatar: (userId: string, avatarUrl: string) => Promise<boolean>;
   createExpense: (expenseData: {
@@ -558,19 +558,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const deleteUser = async (userId: string) => {
+  const deleteUser = async (userId: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const token = localStorage.getItem('kenzo_kore_jwt');
-      await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       });
-      await refreshData();
-    } catch (err) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        addAuditLog('EMPLOYEE_DELETED', `Admin removed employee ID ${userId} and all related records from ledger`);
+        notifyRealtimeSync();
+        await refreshData();
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.message || 'Failed to delete user' };
+      }
+    } catch (err: any) {
       console.error('Delete user error: ', err);
+      return { success: false, message: err.message || 'Network error while deleting employee' };
     }
   };
 

@@ -621,21 +621,62 @@ export class AuthController {
 
   /**
    * Delete employee (Admin/SuperAdmin only)
+   * Cascade deletes all user claims, approvals, sessions, and requires re-activation if they rejoin
    */
   @Delete('users/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN')
   async deleteUser(@Param('id') id: string) {
-    await this.prisma.auditLog.deleteMany({ where: { userId: id } });
-    await this.prisma.notification.deleteMany({ where: { userId: id } });
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found in system ledger');
+    }
+
+    const cleanEmail = user.email.toLowerCase().trim();
+
+    // 1. Unlink any subordinate employees whose manager is this user
+    await this.prisma.user.updateMany({
+      where: { managerId: id },
+      data: { managerId: null },
+    });
+
+    // 2. Fetch all expenses belonging to this employee
+    const userExpenses = await this.prisma.expense.findMany({
+      where: { employeeId: id },
+      select: { id: true },
+    });
+    const expenseIds = userExpenses.map((e) => e.id);
+
+    // 3. Delete all related expense items, approvals, reimbursements, tags and the expenses
+    if (expenseIds.length > 0) {
+      await this.prisma.expenseItem.deleteMany({ where: { expenseId: { in: expenseIds } } });
+      await this.prisma.expenseApproval.deleteMany({ where: { expenseId: { in: expenseIds } } });
+      await this.prisma.reimbursement.deleteMany({ where: { expenseId: { in: expenseIds } } });
+      await this.prisma.expenseTag.deleteMany({ where: { expenseId: { in: expenseIds } } });
+      await this.prisma.expense.deleteMany({ where: { id: { in: expenseIds } } });
+    }
+
+    // 4. Delete approvals where this user was the approver
     await this.prisma.expenseApproval.deleteMany({ where: { approverId: id } });
 
+    // 5. Delete audit logs, notifications, user sessions, and challenges
+    await this.prisma.auditLog.deleteMany({ where: { userId: id } });
+    await this.prisma.notification.deleteMany({ where: { userId: id } });
+    await this.prisma.userSession.deleteMany({ where: { userId: id } }).catch(() => null);
+    await this.prisma.verificationChallenge.deleteMany({ where: { email: cleanEmail } });
+
+    // 6. Delete the User record from PostgreSQL
     const deleted = await this.prisma.user.delete({
       where: { id },
     });
 
+    // 7. Remove mirror EmployeeIdentity so that any future login requires full re-activation
+    await this.prisma.employeeIdentity.deleteMany({
+      where: { primaryEmail: cleanEmail },
+    }).catch(() => null);
+
     return {
-      message: `Employee ${deleted.name} removed from system`,
+      message: `Employee ${deleted.name} (${cleanEmail}) completely deleted from database. If they log in again, full account activation is required.`,
     };
   }
 }

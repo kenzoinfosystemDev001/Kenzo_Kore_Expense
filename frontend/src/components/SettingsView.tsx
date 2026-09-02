@@ -113,14 +113,18 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = (userId: string, userName: string) => {
+  const handleDeleteUser = async (userId: string, userName: string) => {
     if (currentUser?.id === userId) {
       alert('Error: You cannot delete your own active session user profile.');
       return;
     }
-    if (window.confirm(`Are you sure you want to delete employee ${userName}? This action is irreversible.`)) {
-      deleteUser(userId);
-      alert(`User profile ${userName} successfully dropped from PostgreSQL ledger.`);
+    if (window.confirm(`Are you sure you want to delete employee ${userName}? All their records will be removed, and if they log in again, full account activation will be required.`)) {
+      const res = await deleteUser(userId);
+      if (res?.success) {
+        alert(`Employee ${userName} successfully removed from the system. If they rejoin or sign in, full account activation is required.`);
+      } else {
+        alert(`Failed to delete employee: ${res?.message || 'Error occurred'}`);
+      }
     }
   };
 

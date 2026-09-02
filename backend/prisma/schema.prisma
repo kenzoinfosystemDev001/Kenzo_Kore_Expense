@@ -189,7 +189,7 @@ model Expense {
   id               String            @id @default(uuid())
   title            String
   employeeId       String
-  employee         User              @relation(fields: [employeeId], references: [id])
+  employee         User              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   departmentId     String
   department       Department        @relation(fields: [departmentId], references: [id])
   costCenterId     String
@@ -242,7 +242,7 @@ model ExpenseApproval {
   expenseId  String
   expense    Expense       @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   approverId String
-  approver   User          @relation(fields: [approverId], references: [id])
+  approver   User          @relation(fields: [approverId], references: [id], onDelete: Cascade)
   status     ExpenseStatus
   comment    String?
   createdAt  DateTime      @default(now())
@@ -288,7 +288,7 @@ model AuditLog {
   id        String   @id @default(uuid())
   timestamp DateTime @default(now())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   action    String
   details   String
   ipAddress String
